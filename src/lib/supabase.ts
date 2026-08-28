@@ -301,12 +301,14 @@ export interface Database {
   };
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 // Untyped client — avoids Supabase v2 type inference conflicts with .update()/.insert()
 // The Database interface above is kept for reference and IntelliSense on .from() selects
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: false }
+});
 
 // Helper to set player context for RLS
 export function setPlayerContext(sessionToken: string, playerId: string, teamId?: string) {
