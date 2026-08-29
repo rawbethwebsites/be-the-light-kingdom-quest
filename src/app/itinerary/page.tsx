@@ -17,7 +17,17 @@ const EVENT = {
   speaker: 'Rob / The Boost Nation',
 };
 
-const SEGMENTS = [
+type Segment = {
+  time: string;
+  duration: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  items: string[];
+  bibleVerse?: { ref: string; text: string };
+};
+
+const SEGMENTS: Segment[] = [
   {
     time: '9:00 – 9:10',
     duration: '10 min',
@@ -26,10 +36,13 @@ const SEGMENTS = [
     color: 'text-tbn-gold',
     items: [
       'Greet the teenagers, introduce the theme: "Be The Light"',
-      'Read Matthew 5:14 — "You are the light of the world. A city set on a hill cannot be hidden."',
       'Quick icebreaker: "What does it mean to be light in your generation?"',
       'Introduce the session plan: talk + game + portfolio design',
     ],
+    bibleVerse: {
+      ref: 'Matthew 5:14–16',
+      text: '"You are the light of the world. A city set on a hill cannot be hidden. Nor do people light a lamp and put it under a basket, but on a stand, and it gives light to all in the house. In the same way, let your light shine before others, so that they may see your good works and give glory to your Father who is in heaven."',
+    },
   },
   {
     time: '9:10 – 9:25',
@@ -42,8 +55,11 @@ const SEGMENTS = [
       'Technology and AI are tools — they can be used for good or bad',
       'Teenagers should use AI to learn, create, solve problems, and develop their gifts',
       'AI must not replace wisdom, character, truth, prayer, or personal effort',
-      'Key verse: 1 Timothy 4:12 — "Don\'t let anyone look down on you because you are young"',
     ],
+    bibleVerse: {
+      ref: '1 Timothy 4:12',
+      text: '"Don\'t let anyone look down on you because you are young, but set an example for the believers in speech, in conduct, in love, in faith and in purity."',
+    },
   },
   {
     time: '9:25 – 9:50',
@@ -59,6 +75,10 @@ const SEGMENTS = [
       'Live leaderboard after every 2–3 questions',
       'Wrap with: "You know the Word — now let\'s test what you hear"',
     ],
+    bibleVerse: {
+      ref: 'Psalm 119:105',
+      text: '"Your word is a lamp for my feet, a light on my path."',
+    },
   },
   {
     time: '9:50 – 10:05',
@@ -73,6 +93,10 @@ const SEGMENTS = [
       'Always label AI-generated content clearly — don\'t pass it off as Scripture',
       'Key teaching: "Truth is worth checking. Use AI to learn, not to copy."',
     ],
+    bibleVerse: {
+      ref: '1 Thessalonians 5:21',
+      text: '"But test them all; hold on to what is good, reject every kind of evil."',
+    },
   },
   {
     time: '10:05 – 10:25',
@@ -88,6 +112,10 @@ const SEGMENTS = [
       'Truth Shield bonus for two correct consecutive answers',
       'Display the key teaching phrase on screen after the final round',
     ],
+    bibleVerse: {
+      ref: 'Proverbs 14:15',
+      text: '"The simple believe anything, but the prudent give thought to their steps."',
+    },
   },
   {
     time: '10:25 – 10:35',
@@ -102,6 +130,10 @@ const SEGMENTS = [
       'Introduction to digital portfolios: "Show your light online"',
       'Explain the workshop: everyone will design a personal portfolio today',
     ],
+    bibleVerse: {
+      ref: '1 Peter 4:10',
+      text: '"Each of you should use whatever gift you have received to serve others, as faithful stewards of God\'s grace in its various forms."',
+    },
   },
   {
     time: '10:35 – 11:15',
@@ -118,6 +150,10 @@ const SEGMENTS = [
       'Step 5: Review and polish — verify everything AI helped you write',
       'Facilitator walks around to help individuals, highlights a few on the projector',
     ],
+    bibleVerse: {
+      ref: 'Colossians 3:23',
+      text: '"Whatever you do, work at it with all your heart, as working for the Lord, not for human masters."',
+    },
   },
   {
     time: '11:15 – 11:30',
@@ -131,6 +167,10 @@ const SEGMENTS = [
       'Reinforces the talk themes: character must lead, technology is powerful',
       'Shorter version: play 5–6 questions if running behind schedule',
     ],
+    bibleVerse: {
+      ref: 'James 1:5',
+      text: '"If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you."',
+    },
   },
   {
     time: '11:30 – 11:50',
@@ -146,6 +186,10 @@ const SEGMENTS = [
       'Closing prayer: "Lord, make us light in our generation"',
       'Group photo with the leaderboard screen',
     ],
+    bibleVerse: {
+      ref: 'Matthew 5:16',
+      text: '"In the same way, let your light shine before others, so that they may see your good works and give glory to your Father who is in heaven."',
+    },
   },
 ];
 
@@ -268,6 +312,16 @@ export default function ItineraryPage() {
                       </li>
                     ))}
                   </ul>
+                  {seg.bibleVerse && (
+                    <div className="mt-4 rounded-lg border-l-2 border-tbn-gold/40 bg-tbn-gold/5 px-4 py-3">
+                      <p className="text-sm italic leading-relaxed text-tbn-cream/75 md:text-base">
+                        {seg.bibleVerse.text}
+                      </p>
+                      <p className="mt-2 text-xs font-semibold text-tbn-gold/70">
+                        — {seg.bibleVerse.ref}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}
