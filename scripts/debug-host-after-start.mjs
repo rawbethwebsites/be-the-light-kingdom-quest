@@ -1,7 +1,11 @@
 import { chromium } from 'playwright';
 
 const BASE = 'https://light.theboostnation.com';
-const PASSCODE = 'be-the-light-host-2026';
+const PASSCODE = process.env.E2E_HOST_PASSCODE;
+if (!PASSCODE) {
+  console.error('Missing E2E_HOST_PASSCODE environment variable');
+  process.exit(1);
+}
 function extractRoomCode(text) {
   const matches = [...text.matchAll(/\b[A-F0-9]{6}\b/g)].map(m => m[0]);
   return matches[0];
