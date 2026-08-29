@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, type Database } from '@/lib/supabase';
-import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS } from '@/lib/utils';
+import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS, calculateLightRushScore, calculateTruthDetectorScore } from '@/lib/utils';
 import { NavBar } from '@/components/NavBar';
 import { MISSION_TEMPLATES } from '@/lib/missions';
 
@@ -292,16 +292,67 @@ export default function HostDashboard() {
 
   const revealAnswer = async () => {
     if (!room || !currentQuestion) return;
-    setAnswerRevealed(true);
-    setTimerRunning(false);
-    // Broadcast a game event so players know the answer is revealed
-    await supabase
-      .from('game_events')
-      .insert([{
-        room_id: room.id,
-        event_type: 'answer_revealed',
-        payload: { question_id: currentQuestion.id, correct_option: currentQuestion.correct_option },
-      }]);
+
+    try {
+      setAnswerRevealed(true);
+      setTimerRunning(false);
+
+      // Score all unscored answers for this question before broadcasting reveal.
+      const { data: answerRows, error: answersError } = await supabase
+        .from('answers')
+        .select('*')
+        .eq('room_id', room.id)
+        .eq('question_id', currentQuestion.id)
+        .eq('points_awarded', 0);
+
+      if (answersError) throw answersError;
+
+      for (const answer of answerRows || []) {
+        const team = teams.find(t => t.id === answer.team_id);
+        if (!team) continue;
+
+        const isCorrect = answer.selected_option === currentQuestion.correct_option;
+        const scoreResult = activeGame === 'truth_detector'
+          ? calculateTruthDetectorScore(isCorrect, false, team.streak || 0)
+          : calculateLightRushScore(
+              isCorrect,
+              Math.max(0, answer.response_time_ms || currentQuestion.time_limit_seconds * 1000),
+              currentQuestion.time_limit_seconds,
+              team.streak || 0
+            );
+
+        const newScore = (team.score || 0) + scoreResult.points;
+
+        await supabase
+          .from('answers')
+          .update({ points_awarded: scoreResult.points })
+          .eq('id', answer.id);
+
+        await supabase
+          .from('teams')
+          .update({ score: newScore, streak: scoreResult.newStreak })
+          .eq('id', team.id);
+      }
+
+      await loadTeams(room.id);
+
+      // Broadcast reveal only after scoring is calculated.
+      await supabase
+        .from('game_events')
+        .insert([{
+          room_id: room.id,
+          event_type: 'answer_revealed',
+          payload: {
+            question_id: currentQuestion.id,
+            correct_option: currentQuestion.correct_option,
+            explanation: currentQuestion.explanation,
+            bible_reference: currentQuestion.bible_reference,
+          },
+        }]);
+    } catch (err: any) {
+      console.error('Reveal answer error:', err);
+      setError(err.message || 'Failed to reveal answer');
+    }
   };
 
   const toggleTimer = () => {

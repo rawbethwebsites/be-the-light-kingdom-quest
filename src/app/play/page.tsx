@@ -193,7 +193,24 @@ function PlayContent() {
     if (data) {
       setRoom(data);
       setRoomCode(data.code);
-      loadTeams(roomId);
+      await loadTeams(roomId);
+
+      if (data.status === 'active' && data.active_question_id) {
+        const { data: qData } = await supabase
+          .from('game_questions')
+          .select('*')
+          .eq('id', data.active_question_id)
+          .single();
+
+        if (qData) {
+          setCurrentQuestion(qData as GameQuestion);
+          setTimerSeconds((qData as GameQuestion).time_limit_seconds);
+          setHasSubmitted(false);
+          setSelectedAnswer(null);
+          setRevealedAnswer(null);
+          setGameState('playing');
+        }
+      }
     }
   };
 
@@ -309,7 +326,9 @@ function PlayContent() {
       if (error) throw error;
 
       setHasSubmitted(true);
-      setGameState('revealed');
+      // Stay on the question screen and show "Waiting for reveal".
+      // The host's revealAnswer() inserts a game_event that moves players to 'revealed'.
+      setGameState('playing');
     } catch (err: any) {
       setError(err.message || 'Failed to submit answer');
     } finally {

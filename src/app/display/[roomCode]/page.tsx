@@ -58,7 +58,10 @@ export default function DisplayPage() {
     
     setRoom(data);
     loadTeams(data.id);
-    loadQuestions(data.active_game_key);
+    await loadQuestions(data.active_game_key);
+    if (data.active_question_id) {
+      await loadCurrentQuestion(data.active_question_id);
+    }
     setIsLoading(false);
   };
 
@@ -90,6 +93,19 @@ export default function DisplayPage() {
     if (data) setQuestions(data);
   };
 
+  const loadCurrentQuestion = async (questionId: string) => {
+    const { data } = await supabase
+      .from('game_questions')
+      .select('*')
+      .eq('id', questionId)
+      .single();
+
+    if (data) {
+      setCurrentQuestion(data as GameQuestion);
+      setTimerSeconds((data as GameQuestion).time_limit_seconds);
+    }
+  };
+
   // Subscribe to realtime updates
   useEffect(() => {
     if (!room) return;
@@ -98,24 +114,24 @@ export default function DisplayPage() {
       .channel(`display:room:${room.id}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${room.id}` },
-        (payload) => {
+        async (payload) => {
           const updated = payload.new as Room;
           setRoom(updated);
+          
+          if (updated.active_game_key) {
+            loadQuestions(updated.active_game_key);
+          }
+
+          if (updated.active_question_id) {
+            await loadCurrentQuestion(updated.active_question_id);
+            setShowLeaderboard(false);
+          }
           
           // Update timer
           if (updated.timer_ends_at) {
             const ends = new Date(updated.timer_ends_at).getTime();
             const now = Date.now();
             setTimerSeconds(Math.max(0, Math.floor((ends - now) / 1000)));
-          }
-        }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'game_questions', filter: `id=eq.${room.active_question_id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            setCurrentQuestion(payload.new as GameQuestion);
-            setTimerSeconds((payload.new as GameQuestion).time_limit_seconds);
           }
         }
       )
