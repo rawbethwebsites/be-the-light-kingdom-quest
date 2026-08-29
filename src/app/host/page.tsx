@@ -13,6 +13,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, type Database } from '@/lib/supabase';
 import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS, calculateLightRushScore, calculateTruthDetectorScore, calculateLightsOutScore } from '@/lib/utils';
+import { ensureServerClock, getServerRemainingSeconds, serverTimerEndsAt } from '@/lib/server-time';
 import { NavBar } from '@/components/NavBar';
 import { MISSION_TEMPLATES } from '@/lib/missions';
 
@@ -43,12 +44,11 @@ function shuffled<T>(items: T[]): T[] {
 }
 
 function getTimerEndsAt(seconds = QUESTION_SECONDS) {
-  return new Date(Date.now() + seconds * 1000).toISOString();
+  return serverTimerEndsAt(seconds);
 }
 
 function getRemainingSeconds(endsAt?: string | null) {
-  if (!endsAt) return 0;
-  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+  return getServerRemainingSeconds(endsAt);
 }
 
 export default function HostDashboard() {
@@ -85,6 +85,7 @@ export default function HostDashboard() {
 
   // Load host session
   useEffect(() => {
+    ensureServerClock();
     const token = localStorage.getItem('host_session_token');
     if (token) {
       setHostToken(token);
@@ -305,7 +306,8 @@ export default function HostDashboard() {
           ? shuffled(qData as GameQuestion[]).slice(0, Math.min(LIGHTS_OUT_QUESTIONS_PER_GAME, qData.length))
           : (qData as GameQuestion[]);
       const firstQuestion = orderedQuestions[0];
-      const timerEndsAt = getTimerEndsAt(QUESTION_SECONDS);
+      const timerEndsAt = await getTimerEndsAt(QUESTION_SECONDS);
+      const timerStartedAt = new Date(new Date(timerEndsAt).getTime() - QUESTION_SECONDS * 1000).toISOString();
 
       const { error: updateError } = await supabase
         .from('rooms')
@@ -314,7 +316,7 @@ export default function HostDashboard() {
           active_game_key: gameKey,
           active_question_index: 0,
           active_question_id: firstQuestion.id,
-          timer_started_at: new Date().toISOString(),
+          timer_started_at: timerStartedAt,
           timer_ends_at: timerEndsAt,
           joins_locked: true,
         })
@@ -328,7 +330,7 @@ export default function HostDashboard() {
         active_game_key: gameKey,
         active_question_index: 0,
         active_question_id: firstQuestion.id,
-        timer_started_at: new Date().toISOString(),
+        timer_started_at: timerStartedAt,
         timer_ends_at: timerEndsAt,
         joins_locked: true,
       });
@@ -351,13 +353,14 @@ export default function HostDashboard() {
     const newIndex = activeQuestionIndex + 1;
     const nextQ = questions[newIndex];
 
-    const timerEndsAt = getTimerEndsAt(QUESTION_SECONDS);
+    const timerEndsAt = await getTimerEndsAt(QUESTION_SECONDS);
+    const timerStartedAt = new Date(new Date(timerEndsAt).getTime() - QUESTION_SECONDS * 1000).toISOString();
     const { error: updateError } = await supabase
       .from('rooms')
       .update({
         active_question_index: newIndex,
         active_question_id: nextQ.id,
-        timer_started_at: new Date().toISOString(),
+        timer_started_at: timerStartedAt,
         timer_ends_at: timerEndsAt,
       })
       .eq('id', room.id);
@@ -371,7 +374,7 @@ export default function HostDashboard() {
       ...room,
       active_question_index: newIndex,
       active_question_id: nextQ.id,
-      timer_started_at: new Date().toISOString(),
+      timer_started_at: timerStartedAt,
       timer_ends_at: timerEndsAt,
     });
     setActiveQuestionIndex(newIndex);
@@ -462,8 +465,8 @@ export default function HostDashboard() {
     }
 
     const seconds = timerSeconds > 0 ? timerSeconds : currentQuestion?.time_limit_seconds || QUESTION_SECONDS;
-    const startedAt = new Date().toISOString();
-    const endsAt = getTimerEndsAt(seconds);
+    const endsAt = await getTimerEndsAt(seconds);
+    const startedAt = new Date(new Date(endsAt).getTime() - seconds * 1000).toISOString();
     const { error: updateError } = await supabase
       .from('rooms')
       .update({ timer_started_at: startedAt, timer_ends_at: endsAt })
@@ -487,8 +490,8 @@ export default function HostDashboard() {
       return;
     }
 
-    const startedAt = new Date().toISOString();
-    const endsAt = getTimerEndsAt(seconds);
+    const endsAt = await getTimerEndsAt(seconds);
+    const startedAt = new Date(new Date(endsAt).getTime() - seconds * 1000).toISOString();
     const { error: updateError } = await supabase
       .from('rooms')
       .update({ timer_started_at: startedAt, timer_ends_at: endsAt })

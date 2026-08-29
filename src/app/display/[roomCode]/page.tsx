@@ -10,6 +10,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, type Database } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { ensureServerClock, getServerRemainingSeconds } from '@/lib/server-time';
 import { MISSION_TEMPLATES } from '@/lib/missions';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
@@ -27,8 +28,7 @@ const GAMES = {
 const SAFE_QUESTION_SELECT = 'id,game_key,sequence,question_text,question_type,options,explanation,bible_reference,source_label,time_limit_seconds,difficulty,is_active,created_at';
 
 function getRemainingSeconds(endsAt?: string | null) {
-  if (!endsAt) return 0;
-  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+  return getServerRemainingSeconds(endsAt);
 }
 
 export default function DisplayPage() {
@@ -50,6 +50,7 @@ export default function DisplayPage() {
   const [revealPayload, setRevealPayload] = useState<any>(null);
 
   useEffect(() => {
+    ensureServerClock();
     loadRoom();
   }, [roomCode]);
 

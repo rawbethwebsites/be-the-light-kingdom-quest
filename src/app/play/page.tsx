@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase, type Database, setPlayerContext, getPlayerContext, clearPlayerContext } from '@/lib/supabase';
 import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS } from '@/lib/utils';
+import { ensureServerClock, getServerRemainingSeconds } from '@/lib/server-time';
 import { NavBar } from '@/components/NavBar';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
@@ -22,8 +23,7 @@ type GameState = 'welcome' | 'join' | 'lobby' | 'playing' | 'revealed' | 'ended'
 const SAFE_QUESTION_SELECT = 'id,game_key,sequence,question_text,question_type,options,explanation,bible_reference,source_label,time_limit_seconds,difficulty,is_active,created_at';
 
 function getRemainingSeconds(endsAt?: string | null) {
-  if (!endsAt) return 0;
-  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+  return getServerRemainingSeconds(endsAt);
 }
 
 export default function PlayPage() {
@@ -89,6 +89,7 @@ function PlayContent() {
 
   // Restore session on mount
   useEffect(() => {
+    ensureServerClock();
     const context = getPlayerContext();
 
     // QR/deep-link join should show the nickname form with room code prefilled.

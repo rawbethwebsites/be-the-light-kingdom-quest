@@ -6,6 +6,15 @@ const extractRoomCode = text => ([...text.matchAll(/\b[A-F0-9]{6}\b/g)].map(m =>
 const browser = await chromium.launch({ headless: true });
 try {
   const host = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const hostSkewMs = Number(process.env.E2E_HOST_CLOCK_SKEW_MS || 0);
+  if (hostSkewMs) {
+    await host.addInitScript((skew) => {
+      const RealDate = Date;
+      const realNow = RealDate.now.bind(RealDate);
+      // @ts-ignore
+      Date.now = () => realNow() + skew;
+    }, hostSkewMs);
+  }
   const player = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
   await host.goto(`${BASE}/host`, { waitUntil: 'networkidle' });
   const pass = host.getByPlaceholder(/passcode/i);
