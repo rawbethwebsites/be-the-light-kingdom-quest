@@ -403,14 +403,46 @@ export default function HostDashboard() {
   const endGame = async () => {
     if (!room) return;
 
-    if (!confirm('End the current game?')) return;
+    if (!confirm('End the current game? Players will see the Game Over screen.')) return;
 
-    await supabase
-      .from('rooms')
-      .update({ status: 'ended' })
-      .eq('id', room.id);
+    try {
+      setTimerRunning(false);
+      setAnswerRevealed(false);
 
-    setRoom({ ...room, status: 'ended' });
+      const endedRoom = {
+        ...room,
+        status: 'ended' as const,
+        active_game_key: null,
+        active_question_index: 0,
+        active_question_id: null,
+        timer_started_at: null,
+        timer_ends_at: null,
+      };
+
+      const { error } = await supabase
+        .from('rooms')
+        .update({
+          status: 'ended',
+          active_game_key: null,
+          active_question_index: 0,
+          active_question_id: null,
+          timer_started_at: null,
+          timer_ends_at: null,
+        })
+        .eq('id', room.id);
+
+      if (error) throw error;
+
+      setRoom(endedRoom);
+      setActiveGame(null);
+      setQuestions([]);
+      setCurrentQuestion(null);
+      setActiveQuestionIndex(0);
+      setTimerSeconds(0);
+    } catch (err: any) {
+      console.error('End game error:', err);
+      setError(err.message || 'Failed to end game');
+    }
   };
 
   const exportResults = async () => {
@@ -543,6 +575,58 @@ export default function HostDashboard() {
               <Plus className="inline-block w-5 h-5 mr-2" />
               Create New Room
             </button>
+          </div>
+        ) : room.status === 'ended' ? (
+          // Ended state
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <div className="card-glow py-12">
+              <Trophy className="w-20 h-20 text-tbn-gold mx-auto mb-6" />
+              <h2 className="text-4xl md:text-6xl font-display font-bold text-gradient mb-4">
+                Game Ended
+              </h2>
+              <p className="text-xl text-tbn-cream/70 mb-8">
+                The room is closed. Players will see the Game Over screen.
+              </p>
+
+              {sortedTeams.length > 0 && (
+                <div className="max-w-2xl mx-auto mb-8 text-left">
+                  <h3 className="text-2xl font-display font-bold text-tbn-gold mb-4 text-center">
+                    Final Leaderboard
+                  </h3>
+                  <div className="space-y-3">
+                    {sortedTeams.map((team, i) => (
+                      <div key={team.id} className="flex items-center justify-between p-4 bg-tbn-black/50 rounded-lg border border-tbn-gold/20">
+                        <div className="flex items-center gap-4">
+                          <span className="text-2xl font-bold text-tbn-gold">#{i + 1}</span>
+                          <div className={cn('w-4 h-4 rounded-full', `bg-${team.color}`)} />
+                          <span className="font-medium">{team.name}</span>
+                        </div>
+                        <span className="text-2xl font-display font-bold">{team.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <button onClick={exportResults} className="btn-secondary">
+                  <Download className="inline-block w-5 h-5 mr-2" />
+                  Export Results
+                </button>
+                <button
+                  onClick={() => {
+                    setRoom(null);
+                    setTeams([]);
+                    setPlayers([]);
+                    setShowPasscodeModal(true);
+                  }}
+                  className="btn-primary"
+                >
+                  <Plus className="inline-block w-5 h-5 mr-2" />
+                  Create New Room
+                </button>
+              </div>
+            </div>
           </div>
         ) : room.status === 'lobby' ? (
           // Lobby state
