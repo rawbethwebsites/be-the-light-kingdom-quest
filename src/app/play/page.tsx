@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Zap, Shield, Trophy, Wifi, WifiOff, 
-  Check, AlertCircle, Loader2, ArrowRight, Sparkles
+  Check, AlertCircle, Loader2, ArrowRight, Sparkles, Flame
 } from 'lucide-react';
 import { supabase, type Database, setPlayerContext, getPlayerContext, clearPlayerContext } from '@/lib/supabase';
 import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS } from '@/lib/utils';
@@ -463,7 +463,7 @@ function PlayContent() {
               Welcome, Light Bearer
             </h1>
             <p className="text-tbn-cream/70 mb-8 max-w-md mx-auto">
-              Join your team and get ready to shine. Enter the room code from the host screen or scan the QR code.
+              Welcome, Light Bearer. Enter the room code from the host screen or scan the QR code and get ready to shine.
             </p>
             
             <div className="max-w-sm mx-auto space-y-4">
@@ -601,6 +601,23 @@ function PlayContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
+            {player && (
+              <div className="mb-5 grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-2xl border border-tbn-gold/20 bg-tbn-navy/40 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-tbn-cream/45">You</p>
+                  <p className="truncate font-display font-bold text-tbn-cream">{player.nickname}</p>
+                </div>
+                <div className="rounded-2xl border border-tbn-gold/20 bg-tbn-navy/40 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-tbn-cream/45">Score</p>
+                  <p className="font-display text-xl font-bold text-tbn-gold">{teamScore}</p>
+                </div>
+                <div className="rounded-2xl border border-tbn-gold/20 bg-tbn-navy/40 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-tbn-cream/45">Rank</p>
+                  <p className="font-display text-xl font-bold text-tbn-amber">{teamRank ? `#${teamRank}` : '—'}</p>
+                </div>
+              </div>
+            )}
+
             {/* Timer */}
             <div className="text-center mb-6">
               <div className={cn(
@@ -614,8 +631,19 @@ function PlayContent() {
 
             {/* Question */}
             {currentQuestion && (
-              <div className="card-glow mb-6">
-                <p className="text-lg md:text-xl font-medium mb-6">
+              <div className="card-glow mb-6 relative overflow-hidden">
+                {currentQuestion.game_key === 'lights_out' && (
+                  <div className="mb-4 flex items-center gap-2 text-tbn-orange">
+                    <Flame className="h-5 w-5" />
+                    <span className="text-xs font-bold uppercase tracking-[0.22em]">Lights Out · Rescue the City</span>
+                  </div>
+                )}
+                {currentQuestion.source_label && currentQuestion.game_key === 'lights_out' && (
+                  <p className="mb-3 inline-flex rounded-full border border-tbn-gold/20 bg-tbn-gold/10 px-3 py-1 text-xs font-bold text-tbn-gold">
+                    District: {currentQuestion.source_label}
+                  </p>
+                )}
+                <p className="text-xl md:text-2xl font-display font-bold mb-6 leading-snug">
                   {currentQuestion.question_text}
                 </p>
                 
@@ -626,7 +654,7 @@ function PlayContent() {
                       onClick={() => submitAnswer(i)}
                       disabled={hasSubmitted || isLoading}
                       className={cn(
-                        'w-full p-4 rounded-lg border-2 text-left font-medium transition-all',
+                        'w-full min-h-[64px] p-4 rounded-2xl border-2 text-left text-base font-bold leading-snug transition-all active:scale-[0.98]',
                         hasSubmitted && selectedAnswer === i
                           ? 'border-tbn-gold bg-tbn-gold/20'
                           : 'border-tbn-gold/30 hover:border-tbn-gold hover:bg-tbn-gold/10',
@@ -678,7 +706,7 @@ function PlayContent() {
             {currentQuestion && revealedAnswer !== null && (
               <>
                 <div className="text-center mb-6">
-                  <p className="text-tbn-cream/60 mb-2">The correct answer was:</p>
+                  <p className="text-tbn-cream/60 mb-2">{currentQuestion.game_key === 'lights_out' ? 'Best Light Move:' : 'The correct answer was:'}</p>
                   <p className="text-2xl font-display font-bold text-tbn-gold">
                     {String.fromCharCode(65 + revealedAnswer)}.{' '}
                     {(currentQuestion.options as string[])[revealedAnswer]}
@@ -699,9 +727,9 @@ function PlayContent() {
                 <div className="text-center">
                   <p className="text-tbn-cream/60">
                     {selectedAnswer === revealedAnswer ? (
-                      <span className="text-tbn-mint font-bold">✓ Correct! Well done!</span>
+                      <span className="text-tbn-mint font-bold">✓ Light restored. Well done!</span>
                     ) : (
-                      <span className="text-tbn-cream/60">Your score will update soon</span>
+                      <span className="text-tbn-cream/60">Watch the reveal and choose the wiser move next round.</span>
                     )}
                   </p>
                 </div>

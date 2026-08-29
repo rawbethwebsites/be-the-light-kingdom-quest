@@ -5,14 +5,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Zap, Users, Shield, Trophy, Play, Pause, RotateCcw, 
+  Zap, Users, Shield, Trophy, Play, Pause, RotateCcw, Flame, 
   ChevronRight, Eye, EyeOff, Lock, Unlock, Download,
   Settings, LogOut, Monitor, Volume2, VolumeX, Wifi, WifiOff,
   QrCode, Plus, Minus, X, Check, AlertCircle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, type Database } from '@/lib/supabase';
-import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS, calculateLightRushScore, calculateTruthDetectorScore } from '@/lib/utils';
+import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS, calculateLightRushScore, calculateTruthDetectorScore, calculateLightsOutScore } from '@/lib/utils';
 import { NavBar } from '@/components/NavBar';
 import { MISSION_TEMPLATES } from '@/lib/missions';
 
@@ -25,12 +25,13 @@ type GameQuestion = Database['public']['Tables']['game_questions']['Row'];
 const GAMES = [
   { key: 'light_rush', name: 'Light Rush', icon: Zap, description: 'Bible Quiz', color: 'tbn-gold' },
   { key: 'truth_detector', name: 'Truth Detector', icon: Shield, description: 'Discernment Game', color: 'tbn-amber' },
-  { key: 'kingdom_builders', name: 'Kingdom Builders', icon: Users, description: 'Mission Challenges', color: 'tbn-orange' },
+  { key: 'lights_out', name: 'Lights Out', icon: Flame, description: 'Rescue the City', color: 'tbn-orange' },
 ];
 
 const QUESTION_SECONDS = 30;
 const REVEAL_SECONDS = 5;
 const LIGHT_RUSH_QUESTIONS_PER_GAME = 15;
+const LIGHTS_OUT_QUESTIONS_PER_GAME = 12;
 
 function shuffled<T>(items: T[]): T[] {
   const copy = [...items];
@@ -198,8 +199,19 @@ export default function HostDashboard() {
       }
 
       setRoom(data);
+      setActiveGame(data.active_game_key);
+      setActiveQuestionIndex(data.active_question_index || 0);
+      setTimerSeconds(getRemainingSeconds(data.timer_ends_at));
       loadTeams(data.id);
-      loadQuestions(data.active_game_key);
+      await loadQuestions(data.active_game_key);
+      if (data.active_question_id) {
+        const { data: qData } = await supabase
+          .from('game_questions')
+          .select('*')
+          .eq('id', data.active_question_id)
+          .single();
+        if (qData) setCurrentQuestion(qData as GameQuestion);
+      }
     } catch (err) {
       setError('Failed to load room');
     } finally {
@@ -289,7 +301,9 @@ export default function HostDashboard() {
 
       const orderedQuestions = gameKey === 'light_rush'
         ? shuffled(qData as GameQuestion[]).slice(0, Math.min(LIGHT_RUSH_QUESTIONS_PER_GAME, qData.length))
-        : (qData as GameQuestion[]);
+        : gameKey === 'lights_out'
+          ? shuffled(qData as GameQuestion[]).slice(0, Math.min(LIGHTS_OUT_QUESTIONS_PER_GAME, qData.length))
+          : (qData as GameQuestion[]);
       const firstQuestion = orderedQuestions[0];
       const timerEndsAt = getTimerEndsAt(QUESTION_SECONDS);
 
@@ -389,14 +403,17 @@ export default function HostDashboard() {
         if (!team) continue;
 
         const isCorrect = answer.selected_option === currentQuestion.correct_option;
+        const responseMs = Math.max(0, answer.response_time_ms || currentQuestion.time_limit_seconds * 1000);
         const scoreResult = activeGame === 'truth_detector'
           ? calculateTruthDetectorScore(isCorrect, false, team.streak || 0)
-          : calculateLightRushScore(
-              isCorrect,
-              Math.max(0, answer.response_time_ms || currentQuestion.time_limit_seconds * 1000),
-              currentQuestion.time_limit_seconds,
-              team.streak || 0
-            );
+          : activeGame === 'lights_out'
+            ? calculateLightsOutScore(isCorrect, responseMs, currentQuestion.time_limit_seconds, team.streak || 0)
+            : calculateLightRushScore(
+                isCorrect,
+                responseMs,
+                currentQuestion.time_limit_seconds,
+                team.streak || 0
+              );
 
         const newScore = (team.score || 0) + scoreResult.points;
 
@@ -777,7 +794,8 @@ export default function HostDashboard() {
 
             {/* Right: Game selection */}
             <div className="card-glow">
-              <h2 className="text-2xl font-display font-bold mb-4">Choose a Game</h2>
+              <h2 className="text-2xl font-display font-bold mb-2">Choose a Game</h2>
+              <p className="text-tbn-cream/55 mb-4">Run the games in order: knowledge, discernment, then real-life wisdom.</p>
               
               <div className="space-y-4">
                 {GAMES.map(game => {
@@ -874,10 +892,10 @@ export default function HostDashboard() {
                   Leaderboard
                 </button>
                 <button
-                  onClick={() => setShowMissionModal(true)}
-                  className="btn-secondary"
+                  onClick={revealAnswer}
+                  className="btn-secondary border-tbn-orange text-tbn-orange hover:bg-tbn-orange/10"
                 >
-                  Assign Mission
+                  End Question Now
                 </button>
               </div>
             </div>
@@ -887,7 +905,7 @@ export default function HostDashboard() {
               <div className="card-glow">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-tbn-gold font-medium">
-                    Question {activeQuestionIndex + 1} of {questions.length}
+                    {activeGame === 'lights_out' ? 'City Rescue' : 'Question'} {activeQuestionIndex + 1} of {questions.length}
                   </span>
                   <span className="text-tbn-cream/60 text-sm">
                     {questions[activeQuestionIndex].time_limit_seconds}s • {questions[activeQuestionIndex].difficulty}
@@ -1030,7 +1048,7 @@ export default function HostDashboard() {
         </div>
       )}
 
-      {/* Mission Modal */}
+      {/* Legacy Mission Modal (kept hidden; Lights Out replaced Kingdom Builders) */}
       {showMissionModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card-glow max-w-2xl w-full max-h-[80vh] overflow-y-auto">

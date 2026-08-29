@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Zap, Users, Shield } from 'lucide-react';
+import { Zap, Users, Flame, Shield } from 'lucide-react';
 import { NavBar } from '@/components/NavBar';
 
 export default function Home() {
@@ -127,12 +127,12 @@ export default function Home() {
           </div>
 
           <div className="card-dark text-left">
-            <Users className="w-10 h-10 text-tbn-orange mb-4" />
+            <Flame className="w-10 h-10 text-tbn-orange mb-4" />
             <h3 className="text-xl font-display font-bold text-tbn-cream mb-2">
-              Kingdom Builders
+              Lights Out
             </h3>
             <p className="text-tbn-cream/60 text-sm md:text-base">
-              Solve real problems using faith, creativity, and responsible AI. Make an impact!
+              Rescue the city by choosing wise moves in AI, school, friendship, privacy, and faith scenarios.
             </p>
           </div>
         </motion.div>

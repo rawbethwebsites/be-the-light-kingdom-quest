@@ -131,6 +131,33 @@ export function calculateTruthDetectorScore(
   return { points, newStreak, bonus };
 }
 
+
+// Calculate score for Lights Out: Rescue the City
+export function calculateLightsOutScore(
+  isBestLightMove: boolean,
+  responseTimeMs: number,
+  timeLimitSeconds: number,
+  currentStreak: number
+): { points: number; newStreak: number; bonus: string | null } {
+  if (!isBestLightMove) {
+    return { points: 0, newStreak: 0, bonus: null };
+  }
+
+  let points = 150; // Best Light Move base points
+  let bonus: string | null = null;
+  const timeLimitMs = timeLimitSeconds * 1000;
+  const speedRatio = Math.max(0, (timeLimitMs - responseTimeMs) / timeLimitMs);
+  points += Math.round(50 * speedRatio);
+
+  const newStreak = currentStreak + 1;
+  if (newStreak >= 3) {
+    points += 100;
+    bonus = 'City Light Streak! +100';
+  }
+
+  return { points, newStreak, bonus };
+}
+
 // Mission scoring rubric
 export function calculateMissionScore(
   problemRelevant: boolean,

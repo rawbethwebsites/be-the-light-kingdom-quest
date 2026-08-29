@@ -1,10 +1,11 @@
 import { chromium } from 'playwright';
 
-const BASE = 'https://light.theboostnation.com';
+const BASE = process.env.E2E_BASE_URL || 'https://light.theboostnation.com';
 const PASSCODE = process.env.E2E_HOST_PASSCODE;
-const SUPABASE_URL = 'https://biegqlxagqouppnvjdox.supabase.co';
-const ANON = 'sb_publishable_D85-oLlStHz22DUHr033ug_ZJKoqBfm';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 if (!PASSCODE) { console.error('Missing E2E_HOST_PASSCODE'); process.exit(1); }
+if (!SUPABASE_URL || !ANON) { console.error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY'); process.exit(1); }
 const extractRoomCode = text => ([...text.matchAll(/\b[A-F0-9]{6}\b/g)].map(m => m[0]))[0];
 const getJson = async path => fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { apikey: ANON } }).then(r => r.json());
 

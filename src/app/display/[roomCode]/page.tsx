@@ -21,7 +21,7 @@ type Mission = Database['public']['Tables']['missions']['Row'];
 const GAMES = {
   light_rush: { name: 'Light Rush', icon: Zap, color: 'tbn-gold' },
   truth_detector: { name: 'Truth Detector', icon: Shield, color: 'tbn-amber' },
-  kingdom_builders: { name: 'Kingdom Builders', icon: Users, color: 'tbn-orange' },
+  lights_out: { name: 'Lights Out', icon: Flame, color: 'tbn-orange' },
 };
 
 const SAFE_QUESTION_SELECT = 'id,game_key,sequence,question_text,question_type,options,explanation,bible_reference,source_label,time_limit_seconds,difficulty,is_active,created_at';
@@ -46,6 +46,8 @@ export default function DisplayPage() {
   const [showQR, setShowQR] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [revealedAnswer, setRevealedAnswer] = useState<number | null>(null);
+  const [revealPayload, setRevealPayload] = useState<any>(null);
 
   useEffect(() => {
     loadRoom();
@@ -140,6 +142,8 @@ export default function DisplayPage() {
           if (updated.active_question_id) {
             await loadCurrentQuestion(updated.active_question_id);
             setShowLeaderboard(false);
+            setRevealedAnswer(null);
+            setRevealPayload(null);
           }
           
           // Update timer
@@ -147,6 +151,18 @@ export default function DisplayPage() {
             const ends = new Date(updated.timer_ends_at).getTime();
             const now = Date.now();
             setTimerSeconds(Math.max(0, Math.floor((ends - now) / 1000)));
+          }
+        }
+      )
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${room.id}` },
+        (payload) => {
+          const event = payload.new as any;
+          if (event.event_type === 'answer_revealed' && event.payload) {
+            if (event.payload.question_id && room.active_question_id && event.payload.question_id !== room.active_question_id) return;
+            setRevealedAnswer(event.payload.correct_option);
+            setRevealPayload(event.payload);
+            setShowLeaderboard(true);
           }
         }
       )
@@ -380,7 +396,22 @@ export default function DisplayPage() {
 
                 {/* Current question */}
                 {currentQuestion && (
-                  <div className="card-glow p-8 mb-8">
+                  <div className="card-glow p-8 mb-8 relative overflow-hidden">
+                    {room.active_game_key === 'lights_out' && (
+                      <div className="mb-6 grid grid-cols-6 gap-2" aria-label="City light progress">
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              'h-8 rounded-t-lg border border-tbn-gold/20 transition-all duration-500',
+                              i < Math.max(1, room.active_question_index + (revealedAnswer !== null ? 1 : 0))
+                                ? 'bg-light-gradient shadow-glow'
+                                : 'bg-tbn-navy/50'
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
                     <p className="text-2xl md:text-3xl font-medium mb-8 leading-relaxed">
                       {currentQuestion.question_text}
                     </p>
@@ -389,11 +420,15 @@ export default function DisplayPage() {
                       {(currentQuestion.options as string[]).map((option, i) => (
                         <div
                           key={i}
-                          className="p-6 bg-tbn-black/50 rounded-xl border-2 border-tbn-gold/20"
+                          className={cn(
+                            'p-6 bg-tbn-black/50 rounded-xl border-2 transition-all duration-300',
+                            revealedAnswer === i ? 'border-tbn-mint bg-tbn-mint/15 shadow-glow' : 'border-tbn-gold/20',
+                            revealedAnswer !== null && revealedAnswer !== i ? 'opacity-55' : ''
+                          )}
                         >
                           <span className={cn(
                             'text-2xl font-bold mr-4',
-                            `text-${currentGame.color}`
+                            revealedAnswer === i ? 'text-tbn-mint' : `text-${currentGame.color}`
                           )}>
                             {String.fromCharCode(65 + i)}.
                           </span>
@@ -401,10 +436,18 @@ export default function DisplayPage() {
                         </div>
                       ))}
                     </div>
+
+                    {revealedAnswer !== null && (
+                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-8 rounded-2xl border border-tbn-gold/30 bg-tbn-black/60 p-6">
+                        <p className="text-tbn-gold font-display text-2xl font-bold mb-2">
+                          {room.active_game_key === 'lights_out' ? 'Best Light Move' : 'Answer Revealed'}
+                        </p>
+                        {revealPayload?.bible_reference && <p className="text-tbn-amber font-bold mb-2">{revealPayload.bible_reference}</p>}
+                        {revealPayload?.explanation && <p className="text-xl text-tbn-cream/80 leading-relaxed">{revealPayload.explanation}</p>}
+                      </motion.div>
+                    )}
                   </div>
                 )}
-
-                {/* Reveal state would show answer and explanation */}
               </motion.div>
             ) : (
               <motion.div
@@ -422,7 +465,7 @@ export default function DisplayPage() {
         {/* Footer info bar */}
         <footer className="mt-6 pt-6 border-t border-tbn-gold/20 flex items-center justify-between text-sm text-tbn-cream/60">
           <div className="flex items-center gap-6">
-            <span>{teams.length} teams</span>
+            <span>{teams.length} players</span>
             <span>{players.length} players</span>
             <span className={cn(
               'px-3 py-1 rounded-full text-xs font-bold',
