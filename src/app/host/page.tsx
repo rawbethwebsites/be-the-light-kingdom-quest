@@ -736,7 +736,7 @@ export default function HostDashboard() {
 
               <div className="mt-6 pt-6 border-t border-tbn-gold/20">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">Teams ({teams.length})</h3>
+                  <h3 className="text-lg font-bold">Players ({teams.length})</h3>
                   <button
                     onClick={() => setShowTeamModal(true)}
                     className="text-tbn-gold hover:text-tbn-gold/80 text-sm font-medium"
@@ -747,7 +747,7 @@ export default function HostDashboard() {
 
                 <div className="space-y-2">
                   {teams.length === 0 ? (
-                    <p className="text-tbn-cream/40 text-sm">No teams yet. Players will create teams when they join.</p>
+                    <p className="text-tbn-cream/40 text-sm">No players yet. Players will appear here when they join.</p>
                   ) : (
                     teams.map(team => (
                       <div key={team.id} className="flex items-center justify-between p-3 bg-tbn-black/50 rounded-lg">
@@ -756,7 +756,7 @@ export default function HostDashboard() {
                           <span className="font-medium">{team.name}</span>
                         </div>
                         <span className="text-tbn-cream/60 text-sm">
-                          {players.filter(p => p.team_id === team.id).length} players
+                          {players.filter(p => p.team_id === team.id).length ? 'joined' : 'joining'}
                         </span>
                       </div>
                     ))

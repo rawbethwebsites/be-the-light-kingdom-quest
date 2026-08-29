@@ -4,83 +4,88 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biegqlxagqo
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_D85-oLlStHz22DUHr033ug_ZJKoqBfm';
 const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
-const refs = [
-  ['Which verse says, “You are the light of the world”?', ['Romans 8:28','Matthew 5:14','Psalm 23:1','John 3:16'], 1, 'Matthew 5:14', 'Jesus calls His followers the light of the world — visible, useful, and impossible to hide.'],
-  ['Jesus said people do not light a lamp and put it under what?', ['A basket','A mountain','A river','A crown'], 0, 'Matthew 5:15', 'Light is meant to be seen. God gives gifts and courage so we can serve others, not hide.'],
-  ['Why should our light shine before people?', ['So we become famous','So they glorify our Father in heaven','So we win arguments','So nobody corrects us'], 1, 'Matthew 5:16', 'Good works are not for showing off; they point people back to God.'],
-  ['David defeated Goliath with what surprising weapon?', ['A golden sword','A spear from Saul','A sling and stone','A thunderbolt'], 2, '1 Samuel 17:49', 'Faith plus courage made a simple tool powerful in David’s hands.'],
-  ['What did David refuse to wear before facing Goliath?', ['Saul’s armour','Joseph’s coat','A priestly robe','A Roman helmet'], 0, '1 Samuel 17:38–39', 'David did not copy someone else’s style. He used what God had trained him with.'],
-  ['Daniel kept praying even when the law said what?', ['No one could pray to anyone except the king','Everyone must sleep outside','Only lions could be fed','No one could read Scripture'], 0, 'Daniel 6:7–10', 'Daniel chose faithfulness under pressure, even when obedience was costly.'],
-  ['How many times a day did Daniel pray?', ['Once','Twice','Three times','Seven times'], 2, 'Daniel 6:10', 'Daniel’s courage came from consistent prayer, not last-minute panic.'],
-  ['What happened to Daniel in the lions’ den?', ['He fought the lions with a sword','God shut the lions’ mouths','He escaped through a tunnel','The lions became sheep'], 1, 'Daniel 6:22', 'God protected Daniel and showed that faithfulness matters.'],
-  ['How many days and nights did it rain during Noah’s flood?', ['7','12','30','40'], 3, 'Genesis 7:12', 'Noah obeyed God before the crowd understood what was coming.'],
-  ['What was Noah told to build?', ['A tower','An ark','A palace','A city wall'], 1, 'Genesis 6:14', 'Noah’s obedience looked strange until the storm came. Wisdom often prepares before others clap.'],
-  ['What courageous action is Esther known for?', ['She approached the king to plead for her people','She built the ark','She interpreted Pharaoh’s dream','She defeated Goliath'], 0, 'Esther 4:14–16', 'Esther used her position bravely to protect others.'],
-  ['Who said Esther may have come to royalty “for such a time as this”?', ['Mordecai','Moses','Peter','Elijah'], 0, 'Esther 4:14', 'Purpose sometimes appears as responsibility in a hard moment.'],
-  ['Why was Joseph thrown into prison in Egypt?', ['He stole gold','He refused temptation and was falsely accused','He mocked Pharaoh','He abandoned his family'], 1, 'Genesis 39:7–20', 'Joseph chose integrity even when the immediate result was unfair.'],
-  ['What gift helped Joseph interpret dreams?', ['Magic tricks','Wisdom from God','A secret app','A royal textbook'], 1, 'Genesis 40:8', 'Joseph gave credit to God, not himself.'],
-  ['In the Good Samaritan story, who stopped to help the injured man?', ['A Samaritan','A priest only','A Levite only','A soldier'], 0, 'Luke 10:33–35', 'Jesus teaches that real love crosses social lines and takes action.'],
-  ['What question does the Good Samaritan story answer?', ['Who is my neighbour?','Where is the temple?','How tall was Goliath?','Who built the ark?'], 0, 'Luke 10:29–37', 'A neighbour is someone we choose to love and help.'],
-  ['Which is a fruit of the Spirit?', ['Jealousy','Self-control','Pride','Revenge'], 1, 'Galatians 5:22–23', 'The Spirit grows character that makes our lives a light.'],
-  ['Which is NOT listed as a fruit of the Spirit?', ['Kindness','Faithfulness','Boasting','Gentleness'], 2, 'Galatians 5:22–23', 'Godly character is not loud ego; it is love, joy, peace, patience, and more.'],
-  ['Jesus said believers are also the what of the earth?', ['Salt','Smoke','Mirror','Thunder'], 0, 'Matthew 5:13', 'Salt preserves and adds flavour. Followers of Jesus should make a healthy difference.'],
-  ['What should lead how we use technology and AI?', ['Character and wisdom','Only speed','Online popularity','Winning at any cost'], 0, 'Proverbs 4:7', 'Wisdom must lead powerful tools, or the tools can lead us badly.'],
-  ['Which is the best responsible use of AI for schoolwork?', ['Copy and submit without reading','Ask it to explain, practise, then verify','Use it to insult classmates','Share private passwords with it'], 1, 'Proverbs 18:15', 'Wise learners seek knowledge and verify what they receive.'],
-  ['What should you do when an AI answer sounds spiritual but has no Bible reference?', ['Believe it immediately','Share it as Scripture','Check Scripture and verify','Argue online for hours'], 2, 'Acts 17:11', 'The Bereans were praised because they examined the Scriptures carefully.'],
-  ['The Bereans checked Paul’s teaching against what?', ['Trends','Scripture','Memes','Dreams only'], 1, 'Acts 17:11', 'Even impressive teaching should be tested by Scripture.'],
-  ['Which phrase best matches “Truth Detector”?', ['If it sounds deep, it must be true','Truth is worth checking','Fast posts are always facts','Likes prove accuracy'], 1, '1 Thessalonians 5:21', 'Test everything; hold on to what is good.'],
-  ['What did Peter do when Jesus called him on the water?', ['Walked on water toward Jesus','Built an ark','Fought a lion','Wrote a text message'], 0, 'Matthew 14:29', 'Peter stepped out in faith, but he still needed to keep his eyes on Jesus.'],
-  ['When Peter began sinking, what did Jesus do?', ['Ignored him','Immediately reached out His hand','Sent a boat invoice','Told him to swim alone'], 1, 'Matthew 14:30–31', 'Jesus corrected Peter but also rescued him.'],
-  ['Who interpreted Pharaoh’s dreams in Egypt?', ['Joseph','Daniel','David','Nehemiah'], 0, 'Genesis 41:15–16', 'Joseph used his God-given gift to serve and solve a national crisis.'],
-  ['Who interpreted King Nebuchadnezzar’s dream?', ['Daniel','Esther','Noah','Ruth'], 0, 'Daniel 2:27–28', 'Daniel gave God credit for wisdom beyond human ability.'],
-  ['Which young person said, “Speak, for your servant is listening”?', ['Samuel','Solomon','Samson','Saul'], 0, '1 Samuel 3:10', 'Samuel learned to recognise and respond to God’s voice.'],
-  ['Who was told, “Do not let anyone look down on you because you are young”?', ['Timothy','Gideon','Jonah','Abel'], 0, '1 Timothy 4:12', 'Young believers can lead through speech, conduct, love, faith, and purity.'],
-  ['According to 1 Timothy 4:12, young people should set an example in all EXCEPT:', ['Speech','Love','Faith','Clout chasing'], 3, '1 Timothy 4:12', 'Influence is not clout; it is character people can trust.'],
-  ['Who used a small lunch to feed thousands after giving it to Jesus?', ['A boy','A king','A soldier','A tax collector'], 0, 'John 6:9–11', 'Small gifts surrendered to Jesus can become bigger than expected.'],
-  ['How many loaves were in the boy’s lunch?', ['Two','Five','Seven','Twelve'], 1, 'John 6:9', 'Five loaves and two fish were enough when placed in Jesus’ hands.'],
-  ['Which woman showed loyalty by saying, “Your people shall be my people”?', ['Ruth','Esther','Mary Magdalene','Deborah'], 0, 'Ruth 1:16', 'Ruth’s loyalty and faith shaped her future.'],
-  ['Who rebuilt Jerusalem’s walls while facing opposition?', ['Nehemiah','Noah','Nathan','Nicodemus'], 0, 'Nehemiah 4:6', 'Nehemiah combined prayer, planning, teamwork, and courage.'],
-  ['What did Nehemiah do before asking the king for help?', ['Prayed','Posted a rant','Ran away','Built a statue'], 0, 'Nehemiah 1:4–11', 'Prayer and planning can work together.'],
-  ['Who said, “Here am I. Send me!”?', ['Isaiah','Jonah','Cain','Pilate'], 0, 'Isaiah 6:8', 'God calls willing people to carry His message.'],
-  ['Which prophet ran away from God’s assignment to Nineveh?', ['Jonah','Elisha','Habakkuk','Malachi'], 0, 'Jonah 1:1–3', 'Running from purpose delays obedience but does not cancel God’s mercy.'],
-  ['What is the “armour of God” passage about?', ['Standing firm spiritually','Winning fashion awards','Building Noah’s ark','Training lions'], 0, 'Ephesians 6:10–18', 'God equips believers with truth, righteousness, faith, salvation, Scripture, and prayer.'],
-  ['Which item is called the “sword of the Spirit”?', ['The Word of God','A golden spear','A phone charger','A crown'], 0, 'Ephesians 6:17', 'Scripture is not decoration; it helps us discern and stand firm.'],
-  ['What should we do if we lack wisdom?', ['Ask God','Pretend online','Copy the loudest person','Give up'], 0, 'James 1:5', 'God invites us to ask for wisdom generously.'],
-  ['According to James, faith without works is what?', ['Dead','Expensive','Invisible ink','A microphone'], 0, 'James 2:17', 'Real faith produces visible action.'],
-  ['What did Jesus say is the greatest commandment?', ['Love God with all your heart','Win every debate','Become famous','Never ask questions'], 0, 'Matthew 22:37–38', 'Love for God should shape our thoughts, choices, and actions.'],
-  ['What commandment is like the first?', ['Love your neighbour as yourself','Build a bigger barn','Only help friends','Avoid every problem'], 0, 'Matthew 22:39', 'Faith becomes visible in how we treat people.'],
-  ['What did Jesus do for His disciples in John 13?', ['Washed their feet','Gave them phones','Built a palace','Sold tickets'], 0, 'John 13:5', 'Leadership in God’s kingdom looks like humble service.'],
-  ['Which disciple doubted until he saw Jesus alive?', ['Thomas','Andrew','Philip','Matthew'], 0, 'John 20:24–29', 'Jesus met Thomas with truth and invited him into faith.'],
-  ['What did Jesus say about peacemakers?', ['They will be called children of God','They will always win arguments','They should avoid everyone','They need more noise'], 0, 'Matthew 5:9', 'Peacemakers bring God’s character into conflict.'],
-  ['Which Bible book says, “The fear of the Lord is the beginning of knowledge”?', ['Proverbs','Acts','Revelation','Philemon'], 0, 'Proverbs 1:7', 'True learning begins with reverence for God.'],
-  ['Which is a wise online privacy choice?', ['Never share passwords or private details','Post your OTP for friends','Click every free-money link','Use your birthday as every password'], 0, 'Proverbs 22:3', 'Wisdom sees danger and takes precautions.'],
-  ['If a link promises free prizes but asks for your password, what should you do?', ['Stop, verify, and do not enter private info','Share it with everyone','Type fast before it expires','Send your bank details'], 0, 'Proverbs 14:15', 'The simple believe anything, but the prudent think carefully.'],
-  ['Which AI prompt is strongest for learning?', ['Do my homework and hide it','Explain this topic, quiz me, and show sources','Make me look smarter than I am','Insult my teacher'], 1, 'Proverbs 9:9', 'Good prompts help you learn, practise, and grow honestly.'],
-  ['Which is cheating with AI?', ['Using it to explain hard topics','Using it to generate practice questions','Submitting AI work as your own','Checking grammar after writing'], 2, 'Colossians 3:23', 'Responsible AI use supports effort; it should not replace honesty.'],
-  ['What should character do when technology becomes powerful?', ['Lead it','Disappear','Sleep','Follow trends blindly'], 0, 'Proverbs 4:23', 'Guarding the heart matters because choices flow from it.'],
-  ['What does “city set on a hill” mean in Matthew 5?', ['Visible influence that cannot be hidden','A secret cave','A private password','A sports stadium'], 0, 'Matthew 5:14', 'Jesus describes visible, public witness through faithful living.'],
-  ['Which person showed courage before a giant when adults were afraid?', ['David','Jonah','Pilate','Ahab'], 0, '1 Samuel 17:32', 'Courage is not about size; it is about trust and obedience.'],
-  ['Which Bible character became queen and helped save her people?', ['Esther','Ruth','Miriam','Lydia'], 0, 'Esther 7:3–4', 'Esther used influence for protection, not personal comfort only.'],
-  ['Which is the funniest but still true lesson from Jonah?', ['You can run from God, but fish transport is not comfortable','God hates cities','Boats are always bad','Prophets never complain'], 0, 'Jonah 1–2', 'Jonah’s story is serious and funny: God’s mercy outruns our stubbornness.'],
-  ['Which action best shows “being light” at school?', ['Encouraging someone others ignore','Joining cyberbullying','Sharing fake gist','Mocking someone’s accent'], 0, 'Matthew 5:16', 'Light is visible through love, courage, truth, and service.'],
-  ['Which statement best captures Kingdom Quest?', ['Think. Discern. Create. Impact.','Scroll. Copy. Flex. Repeat.','Hide. Panic. Blame. Quit.','Argue. Trend. Vanish. Sleep.'], 0, 'Matthew 5:14–16', 'The game calls teenagers to faith-filled action in real life.'],
-  ['What does Psalm 119:105 call God’s word?', ['A lamp to my feet and a light to my path','A Wi-Fi router','A locked gate','A hidden sword only'], 0, 'Psalm 119:105', 'Scripture gives direction when choices are confusing.'],
-  ['Who led Israel after Moses and told the people to choose whom they would serve?', ['Joshua','Goliath','Herod','Caesar'], 0, 'Joshua 24:15', 'Joshua challenged people to make a clear commitment.'],
-  ['What did Mary say when told she would give birth to Jesus?', ['I am the Lord’s servant','This is impossible so I quit','Send someone else forever','Where is my crown?'], 0, 'Luke 1:38', 'Mary responded with humble trust.'],
-  ['Who climbed a tree to see Jesus?', ['Zacchaeus','Nicodemus','Barabbas','Stephen'], 0, 'Luke 19:4', 'Jesus noticed Zacchaeus and transformed his life.'],
-  ['What changed after Zacchaeus met Jesus?', ['He chose restitution and generosity','He bought a bigger tree','He became a fisherman','He built an ark'], 0, 'Luke 19:8', 'Real encounter with Jesus changes how we treat money and people.'],
-  ['Who was the first king of Israel?', ['Saul','David','Solomon','Samuel'], 0, '1 Samuel 10:1', 'Saul began with opportunity, but leadership still required obedience.'],
-  ['Who asked God for wisdom instead of riches?', ['Solomon','Samson','Saul','Simeon'], 0, '1 Kings 3:9–12', 'Solomon’s best request was for wisdom to serve well.'],
-  ['Which is a high-value way to use your gift?', ['Serve people and glorify God','Hide it forever','Use it only for attention','Use it to embarrass others'], 0, '1 Peter 4:10', 'Gifts are given for service, not selfish display.'],
-  ['According to 1 Peter 4:10, each person should use gifts to do what?', ['Serve others','Win every argument','Avoid responsibility','Become untouchable'], 0, '1 Peter 4:10', 'God gives varied gifts so we can bless one another.'],
-  ['Which claim should immediately trigger Truth Detector mode?', ['“This sounds like a Bible verse, but I have no reference.”','“Matthew 5:14 says you are light.”','“Check the source.”','“Ask a trusted leader.”'], 0, 'Acts 17:11', 'No reference means verify before trusting or sharing.'],
-  ['What is one safe response to cyberbullying?', ['Do not join; save evidence and tell a trusted adult','Forward it for laughs','Create a revenge account','Expose private information'], 0, 'Ephesians 4:29', 'Words should build up, not tear down. Safety and help matter.'],
-  ['Which verse teaches words should build others up?', ['Ephesians 4:29','Genesis 1:1','John 11:35','Numbers 22:28'], 0, 'Ephesians 4:29', 'Online words count too; use them to give grace, not harm.'],
-  ['What should teenagers remember about AI?', ['It is a tool, not a replacement for wisdom and character','It is always perfect','It is Scripture','It removes responsibility'], 0, 'Proverbs 4:7', 'AI can help, but wisdom, truth, prayer, and responsibility must lead.']
+const rows = [
+  ['Which verse says, “You are the light of the world”?', ['Matthew 5:14','John 8:12','Psalm 119:105','Isaiah 60:1'], 0, 'Matthew 5:14', 'Jesus gives His followers a public identity and responsibility: shine with visible faith and good works.'],
+  ['In Matthew 5:15, where should a lamp be placed?', ['Under a basket','On a stand','Inside a jar','Beside the gate'], 1, 'Matthew 5:15', 'A lamp is placed where it gives light. Gifts and faith are meant to serve people, not stay hidden.'],
+  ['According to Matthew 5:16, what should people glorify when they see good works?', ['Our talent','Our church brand','Our Father in heaven','Our confidence'], 2, 'Matthew 5:16', 'The goal of shining is not personal hype; it is pointing people to God.'],
+  ['Jesus also calls His followers the salt of the earth. What does salt suggest?', ['Noise and attention','Preservation and flavour','Speed and popularity','Secrecy and silence'], 1, 'Matthew 5:13', 'Salt quietly makes a difference. Believers should preserve what is good and add kingdom influence.'],
+  ['David’s confidence before Goliath came mostly from what?', ['Saul’s armour','Crowd support','His height','God’s past faithfulness'], 3, '1 Samuel 17:37', 'David remembered how God helped him before. Memory of God’s faithfulness fuels courage.'],
+  ['What weapon did David actually use against Goliath?', ['A sling and stone','Saul’s sword','A bronze spear','A battle axe'], 0, '1 Samuel 17:49', 'David used what he had trained with. God can use simple tools in faithful hands.'],
+  ['Why did David refuse Saul’s armour?', ['It was too expensive','He had not tested it','It belonged to Jonathan','It was already broken'], 1, '1 Samuel 17:38–39', 'David did not copy someone else’s style. He used what God had prepared him with.'],
+  ['Daniel continued praying after the law changed because he valued what most?', ['Public approval','Political safety','Faithfulness to God','Winning arguments'], 2, 'Daniel 6:10', 'Daniel’s private devotion stayed strong under public pressure.'],
+  ['How often did Daniel pray after the decree was issued?', ['Once a day','Twice a day','Three times a day','Only at night'], 2, 'Daniel 6:10', 'Daniel’s courage was built by consistent spiritual discipline.'],
+  ['What did Daniel say God did in the lions’ den?', ['Sent rain','Shut the lions’ mouths','Opened the prison gate','Removed the king'], 1, 'Daniel 6:22', 'God protected Daniel and defended his innocence.'],
+  ['Noah’s obedience is powerful because he built the ark when what was still true?', ['The flood had already ended','The king commanded him','The warning required faith','Everyone agreed with him'], 2, 'Genesis 6:13–22', 'Noah acted before the evidence looked obvious to everyone else.'],
+  ['How many days and nights did rain fall during the flood?', ['Seven','Twenty-one','Thirty','Forty'], 3, 'Genesis 7:12', 'The flood story shows both judgment and God’s provision of rescue.'],
+  ['What quality is Esther especially remembered for?', ['Physical strength','Courageous advocacy','Temple construction','Military strategy'], 1, 'Esther 4:14–16', 'Esther risked comfort and safety to plead for her people.'],
+  ['“For such a time as this” means Esther’s position carried what?', ['Luck only','Responsibility and purpose','Permission to relax','Freedom from risk'], 1, 'Esther 4:14', 'Purpose often shows up as responsibility in a difficult moment.'],
+  ['Joseph resisted temptation in Potiphar’s house because he saw sin primarily as what?', ['A bad career move','A private mistake only','A sin against God','A family tradition'], 2, 'Genesis 39:9', 'Integrity grows when we understand that hidden choices still matter before God.'],
+  ['When Joseph interpreted dreams, who did he credit?', ['His education only','Egyptian magic','His brothers','God'], 3, 'Genesis 40:8', 'Joseph used his gift with humility and gave God the glory.'],
+  ['In the Good Samaritan story, who acted as the true neighbour?', ['The priest','The Levite','The Samaritan','The innkeeper'], 2, 'Luke 10:33–37', 'Jesus defines neighbour-love by merciful action, not labels.'],
+  ['The Good Samaritan teaches that compassion should cross what?', ['Social boundaries','River banks only','Temple walls only','Weather conditions'], 0, 'Luke 10:25–37', 'Kingdom love moves toward need, even when culture expects distance.'],
+  ['Which list contains only fruit of the Spirit?', ['Love, joy, peace','Pride, envy, anger','Fear, shame, greed','Fame, control, comfort'], 0, 'Galatians 5:22–23', 'The Spirit forms character that makes a believer’s life bright and trustworthy.'],
+  ['Which is NOT a fruit of the Spirit?', ['Gentleness','Self-control','Faithfulness','Jealous ambition'], 3, 'Galatians 5:22–23', 'Spiritual growth is not ego. It looks like love-shaped character.'],
+  ['The Bereans were considered noble because they did what?', ['Accepted every speech immediately','Checked teaching against Scripture','Avoided all questions','Followed the loudest crowd'], 1, 'Acts 17:11', 'Discernment means testing even impressive claims by Scripture.'],
+  ['What is the safest response when an online quote sounds biblical but has no reference?', ['Post it quickly','Check Scripture first','Call it a prophecy','Assume it is from Proverbs'], 1, 'Acts 17:11', 'Not everything spiritual-sounding is Scripture. Verify before sharing.'],
+  ['Which statement best describes responsible AI use?', ['AI replaces wisdom','AI is always neutral and perfect','AI can help, but character must lead','AI should make every choice for us'], 2, 'Proverbs 4:7', 'Powerful tools need wise users. Wisdom and character must guide technology.'],
+  ['Which AI use is honest for school?', ['Submitting generated work as yours','Asking for explanations and practice questions','Copying answers during tests','Hiding sources from teachers'], 1, 'Colossians 3:23', 'AI can support learning, but it should not replace personal effort and honesty.'],
+  ['What should you protect when using online tools?', ['Private information','Rumours','Every trend','Anonymous insults'], 0, 'Proverbs 22:3', 'Wisdom sees risk ahead and takes protection seriously.'],
+  ['If a message asks for your password to claim a prize, what is the wise move?', ['Verify and refuse to share private details','Send it before time runs out','Forward it to friends','Use a parent’s account instead'], 0, 'Proverbs 14:15', 'The prudent think carefully before trusting a claim.'],
+  ['Peter walked on water when he responded to whose invitation?', ['John’s','The crowd’s','Jesus’','The boat owner’s'], 2, 'Matthew 14:29', 'Faith steps out because Jesus calls, not because the crowd cheers.'],
+  ['When Peter started sinking, Jesus responded how?', ['Immediately reached out His hand','Waited until morning','Asked the disciples to vote','Sent him back alone'], 0, 'Matthew 14:30–31', 'Jesus corrected Peter’s doubt but also rescued him immediately.'],
+  ['Timothy was told not to let anyone despise him because of what?', ['His youth','His accent','His job','His family size'], 0, '1 Timothy 4:12', 'Young people can set an example through godly character.'],
+  ['According to 1 Timothy 4:12, young believers should set an example in what?', ['Speech, conduct, love, faith, purity','Fashion, followers, money, influence','Noise, speed, jokes, status','Debate, power, image, control'], 0, '1 Timothy 4:12', 'Teenagers can lead by the quality of their lives.'],
+  ['What did the boy offer before Jesus fed the crowd?', ['Five loaves and two fish','Twelve baskets and wine','Seven loaves and honey','Three fish and wheat'], 0, 'John 6:9', 'A small surrendered gift can become significant in Jesus’ hands.'],
+  ['What remained after Jesus fed the five thousand?', ['Nothing at all','Twelve baskets','One jar of oil','Seven stones'], 1, 'John 6:13', 'Jesus provided more than enough. The leftovers showed abundance.'],
+  ['Ruth’s statement “Your people shall be my people” showed what?', ['Loyalty and faith','Political ambition','Fear of travel','A business plan'], 0, 'Ruth 1:16', 'Ruth chose covenant loyalty even when the future was uncertain.'],
+  ['Nehemiah’s rebuilding project combined prayer with what?', ['Planning and teamwork','Ignoring opposition','Personal fame','Avoiding leadership'], 0, 'Nehemiah 2–4', 'Kingdom work often requires prayer, planning, courage, and collaboration.'],
+  ['Before Nehemiah asked the king for help, he first did what?', ['Prayed and fasted','Built the gates','Called an army','Wrote a law'], 0, 'Nehemiah 1:4–11', 'Prayer was not a substitute for action; it prepared him for wise action.'],
+  ['Isaiah responded to God’s call by saying what?', ['Here am I. Send me','I am too busy forever','Ask my brother first','Wait until I am older'], 0, 'Isaiah 6:8', 'A willing heart is central to God’s mission.'],
+  ['Jonah’s story warns us about what?', ['Running from God’s assignment','Helping enemies too quickly','Praying too much','Studying too hard'], 0, 'Jonah 1–4', 'Jonah struggled with obedience and mercy, but God’s compassion was bigger.'],
+  ['In Ephesians 6, the sword of the Spirit is what?', ['The word of God','The shield of faith','The belt of truth','The helmet of salvation'], 0, 'Ephesians 6:17', 'Scripture helps believers stand firm and discern truth.'],
+  ['Which item in the armour of God is connected with faith?', ['Shield','Helmet','Breastplate','Belt'], 0, 'Ephesians 6:16', 'Faith helps believers resist spiritual attack and discouragement.'],
+  ['James says anyone who lacks wisdom should do what?', ['Ask God','Pretend confidence','Copy the crowd','Wait for popularity'], 0, 'James 1:5', 'God invites us to ask for wisdom, not fake it.'],
+  ['Faith without works is described by James as what?', ['Dead','Incomplete but fine','Popular','Hidden treasure'], 0, 'James 2:17', 'Real faith becomes visible through action.'],
+  ['Jesus said the greatest commandment is to love whom first?', ['God','Yourself only','Your teacher','Your nation only'], 0, 'Matthew 22:37–38', 'Love for God is the foundation of a faithful life.'],
+  ['The second great commandment is to love whom?', ['Your neighbour as yourself','Only your friends','Only your family','People who agree with you'], 0, 'Matthew 22:39', 'Love of neighbour makes faith practical and visible.'],
+  ['In John 13, Jesus showed servant leadership by doing what?', ['Washing His disciples’ feet','Calling down fire','Collecting taxes','Building a throne'], 0, 'John 13:5', 'Jesus modelled leadership through humble service.'],
+  ['Thomas is remembered after the resurrection because he first did what?', ['Doubted until he saw Jesus','Denied Jesus three times','Climbed a sycamore tree','Sold a field'], 0, 'John 20:24–29', 'Jesus met Thomas honestly and invited him to believe.'],
+  ['Jesus said peacemakers will be called what?', ['Children of God','Kings of Israel','Sons of thunder','Teachers of the law'], 0, 'Matthew 5:9', 'Peacemakers reflect God’s character in conflict.'],
+  ['Proverbs says the fear of the Lord is the beginning of what?', ['Knowledge','Wealth','Strength','Travel'], 0, 'Proverbs 1:7', 'True learning starts with reverence for God.'],
+  ['Psalm 119:105 calls God’s word what?', ['A lamp and a light','A crown and robe','A shield and spear','A river and tree'], 0, 'Psalm 119:105', 'Scripture gives direction for daily steps and long-term choices.'],
+  ['Joshua challenged Israel to choose whom they would what?', ['Serve','Fight','Tax','Crown'], 0, 'Joshua 24:15', 'Faith requires a clear allegiance, not vague intention.'],
+  ['Mary responded to God’s message by calling herself what?', ['The Lord’s servant','The queen of Israel','The temple guard','The prophet’s sister'], 0, 'Luke 1:38', 'Mary’s faith showed humble surrender.'],
+  ['Zacchaeus climbed a tree because he wanted to do what?', ['See Jesus','Hide from Rome','Preach in public','Collect fruit'], 0, 'Luke 19:4', 'His curiosity became a moment of transformation when Jesus noticed him.'],
+  ['After meeting Jesus, Zacchaeus promised to make things right through what?', ['Generosity and restitution','More tax pressure','Religious debate','Moving city'], 0, 'Luke 19:8', 'True repentance changes behaviour, including how we treat money and people.'],
+  ['Solomon asked God for what above riches?', ['Wisdom','Long life only','Military power','Fame'], 0, '1 Kings 3:9–12', 'Wisdom is a better foundation for leadership than status or wealth.'],
+  ['1 Peter 4:10 says each person should use their gift to do what?', ['Serve others','Prove superiority','Avoid work','Gain control'], 0, '1 Peter 4:10', 'Gifts are entrusted for service, not selfish display.'],
+  ['Ephesians 4:29 teaches our words should do what?', ['Build others up','Win every insult contest','Expose every rumour','Sound religious only'], 0, 'Ephesians 4:29', 'Online and offline words should give grace and strengthen people.'],
+  ['What is a wise response to cyberbullying?', ['Do not join, save evidence, tell a trusted adult','Reply with worse insults','Create a fake account','Share it for laughs'], 0, 'Ephesians 4:29', 'Being light online means refusing harm and seeking safe help.'],
+  ['Which phrase best captures discernment?', ['Test what you hear','Trust every viral post','Believe only confident voices','Ignore all correction'], 0, '1 Thessalonians 5:21', 'Discernment checks claims and holds on to what is good.'],
+  ['What should happen before sharing a dramatic “fact” online?', ['Verify the source','Add emojis','Post before others do','Assume it is true'], 0, 'Proverbs 18:17', 'The first story can sound right until it is examined.'],
+  ['Which habit helps teenagers use AI well?', ['Ask, learn, verify, then apply honestly','Copy, paste, hide, repeat','Outsource every thought','Share private data for better answers'], 0, 'Proverbs 18:15', 'Wise learners use tools to grow, not to escape thinking.'],
+  ['Which option is closest to biblical wisdom about technology?', ['Use tools under truth and character','Let tools define truth','Use speed as morality','Choose popularity over honesty'], 0, 'Proverbs 4:23', 'The heart must be guarded because tools amplify what is inside.'],
+  ['What does a “city on a hill” communicate?', ['Visible witness','Private fear','Hidden talent','Secret knowledge'], 0, 'Matthew 5:14', 'Jesus describes influence that cannot stay invisible.'],
+  ['Which action best shines light in school?', ['Defending someone being mocked','Joining the mockery','Spreading unverified gist','Ignoring lonely students'], 0, 'Matthew 5:16', 'Light shows up through courage, kindness, truth, and service.'],
+  ['What makes a Bible-style quote dangerous if it is not Scripture?', ['It can sound holy while being false','It is always harmless','It automatically becomes a verse','It needs no checking'], 0, 'Acts 17:11', 'Spiritual language can be convincing, so Scripture must be checked.'],
+  ['Which is the stronger study prompt?', ['Explain the topic, quiz me, and show sources','Write my assignment so nobody knows','Give me only final answers','Make a shortcut to avoid studying'], 0, 'Proverbs 9:9', 'Strong prompts help you understand, practise, and verify.'],
+  ['Which behaviour best protects privacy?', ['Keeping passwords and OTPs private','Sharing login details with friends','Posting school ID numbers','Using the same weak password everywhere'], 0, 'Proverbs 22:3', 'Caution is wisdom, not fear.'],
+  ['What is one way to test an AI Bible claim?', ['Compare it with an actual Bible passage','Check if it sounds emotional','Count how many likes it gets','Ask it to insist harder'], 0, 'Acts 17:11', 'Verification requires a real source, not confidence or emotion.'],
+  ['Which is a Kingdom Builder mindset?', ['Use gifts to solve real problems','Wait until adults do everything','Use talent only for applause','Avoid hard needs'], 0, '1 Peter 4:10', 'God-given gifts can serve school, church, home, and community.'],
+  ['What should lead online influence?', ['Truth, love, and responsibility','Attention at any cost','Winning every argument','Being feared'], 0, 'Ephesians 4:15', 'Christian influence joins truth with love.'],
+  ['What did Jesus say people do with a city set on a hill?', ['They cannot hide it','They rebuild it daily','They move it into a valley','They cover it with a basket'], 0, 'Matthew 5:14', 'Visible discipleship is part of the calling.'],
+  ['Which is the best meaning of “Use AI to learn, not to copy”?', ['Let AI support understanding while you do honest work','Let AI replace your effort','Use AI only when cheating is easy','Avoid all technology forever'], 0, 'Colossians 3:23', 'Responsible technology use protects both learning and integrity.'],
+  ['Which choice shows wisdom when a classmate sends harmful content?', ['Do not forward it; report or seek help','Forward it quietly','Save it for jokes later','Threaten them publicly'], 0, 'Ephesians 5:11', 'Light exposes harmful works without participating in them.'],
+  ['Why should teens verify information before reposting?', ['Falsehood can harm people quickly','It makes posts slower only','Every post disappears instantly','Verification is only for adults'], 0, 'Proverbs 14:15', 'Fast sharing can spread harm; wise people check first.'],
+  ['Which answer best links faith and creativity?', ['Create to serve people and glorify God','Create only for status','Hide creativity until perfect','Copy others without credit'], 0, 'Exodus 31:1–5', 'God gives creative skill that can be used for excellent service.'],
+  ['Who received skill and wisdom for artistic work on the tabernacle?', ['Bezalel','Barabbas','Balaam','Belshazzar'], 0, 'Exodus 31:1–5', 'Creative skill can be spiritual service when used faithfully.'],
+  ['Which person showed courage by speaking before Pharaoh?', ['Moses','Matthew','Malachi','Mordecai'], 0, 'Exodus 5:1', 'God can use reluctant people when they obey His call.'],
+  ['Which person encouraged Esther to act for her people?', ['Mordecai','Melchizedek','Methuselah','Micah'], 0, 'Esther 4:13–14', 'Wise voices can help us recognise responsibility and timing.'],
+  ['What should a light-bearer do when they make a mistake online?', ['Own it, correct it, and learn','Delete evidence and blame others','Double down for pride','Create a new rumour'], 0, 'Proverbs 28:13', 'Integrity includes confession, correction, and growth.'],
+  ['Which statement is most true about spiritual influence?', ['Consistency matters more than performance','Only platforms matter','Only loud people lead','Private choices never count'], 0, 'Matthew 5:16', 'Light is not a stage trick; it is a consistent life that points to God.'],
 ];
 
-function rotateOptions(row, index) {
-  // Keep some legacy B answers, but distribute correct answers across A-D.
+function rotate(row, index) {
   const target = index % 4;
   const options = [...row[1]];
   const [correct] = options.splice(row[2], 1);
@@ -101,7 +106,7 @@ function rotateOptions(row, index) {
   };
 }
 
-const questions = refs.map(rotateOptions);
+const questions = rows.map(rotate);
 
 const { error: disableError } = await supabase
   .from('game_questions')
@@ -112,9 +117,8 @@ if (disableError) throw disableError;
 const { error: insertError } = await supabase.from('game_questions').insert(questions);
 if (insertError) throw insertError;
 
-const counts = questions.reduce((acc, q) => {
-  acc[q.correct_option] = (acc[q.correct_option] || 0) + 1;
+const distribution = questions.reduce((acc, q) => {
+  acc[String.fromCharCode(65 + q.correct_option)] = (acc[String.fromCharCode(65 + q.correct_option)] || 0) + 1;
   return acc;
 }, {});
-
-console.log(JSON.stringify({ inserted: questions.length, correctOptionDistribution: counts }, null, 2));
+console.log(JSON.stringify({ inserted: questions.length, distribution }, null, 2));

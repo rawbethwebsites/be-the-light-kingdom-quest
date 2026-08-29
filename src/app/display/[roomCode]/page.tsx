@@ -269,7 +269,7 @@ export default function DisplayPage() {
                   <div className="card-glow p-8">
                     <h3 className="text-2xl font-bold mb-6 flex items-center justify-center gap-3">
                       <Users className="w-8 h-8" />
-                      Teams Joined ({teams.length})
+                      Players Joined ({teams.length})
                     </h3>
                     <div className="grid md:grid-cols-3 gap-4">
                       {teams.map((team, i) => (

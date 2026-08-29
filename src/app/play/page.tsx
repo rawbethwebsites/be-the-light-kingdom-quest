@@ -111,6 +111,14 @@ function PlayContent() {
           setRoom(updatedRoom);
           
           if (updatedRoom.status === 'ended') {
+            if (player?.team_id) {
+              await refreshMyScore(updatedRoom.id, player.team_id);
+            } else {
+              await loadTeams(updatedRoom.id);
+            }
+            setHasSubmitted(false);
+            setSelectedAnswer(null);
+            setRevealedAnswer(null);
             setGameState('ended');
             return;
           }
@@ -208,8 +216,10 @@ function PlayContent() {
 
       setPlayer(data);
       setRoomCode(data.room_id); // Will need to fetch room separately
-      loadRoom(data.room_id);
-      setGameState('lobby');
+      await loadRoom(data.room_id);
+      if (data.teams?.score !== undefined) {
+        setTeamScore(data.teams.score);
+      }
     } catch (err) {
       clearPlayerContext();
       setGameState('welcome');
@@ -227,6 +237,19 @@ function PlayContent() {
       setRoom(data);
       setRoomCode(data.code);
       await loadTeams(roomId);
+
+      if (data.status === 'ended') {
+        if (player?.team_id) {
+          await refreshMyScore(data.id, player.team_id);
+        } else {
+          await loadTeams(roomId);
+        }
+        setHasSubmitted(false);
+        setSelectedAnswer(null);
+        setRevealedAnswer(null);
+        setGameState('ended');
+        return;
+      }
 
       if (data.status === 'active' && data.active_question_id) {
         const { data: qData } = await supabase
@@ -254,7 +277,34 @@ function PlayContent() {
       .eq('room_id', roomId)
       .order('created_at');
     
-    if (data) setTeams(data);
+    if (data) {
+      setTeams(data);
+      if (player?.team_id) {
+        const sorted = [...data].sort((a, b) => b.score - a.score);
+        const ownIndex = sorted.findIndex(t => t.id === player.team_id);
+        const own = data.find(t => t.id === player.team_id);
+        if (own) setTeamScore(own.score);
+        if (ownIndex >= 0) setTeamRank(ownIndex + 1);
+      }
+    }
+  };
+
+  const refreshMyScore = async (roomId: string, teamId: string) => {
+    const { data } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('score', { ascending: false });
+
+    if (!data) return;
+
+    setTeams(data);
+    const ownIndex = data.findIndex(t => t.id === teamId);
+    const own = data[ownIndex];
+    if (own) {
+      setTeamScore(own.score);
+      setTeamRank(ownIndex + 1);
+    }
   };
 
   const validateAndJoin = async () => {
@@ -289,8 +339,23 @@ function PlayContent() {
       }
 
       roomId = roomData.id;
+      const cleanNickname = nickname.trim();
 
-      // Create or get a team (for now, create a new team for the player)
+      const { data: existingNames, error: nameError } = await supabase
+        .from('players')
+        .select('id,nickname')
+        .eq('room_id', roomId)
+        .ilike('nickname', cleanNickname);
+
+      if (nameError) throw nameError;
+      if (existingNames && existingNames.length > 0) {
+        setNicknameError('That name is already taken in this room. Add a number or choose another name.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Individual mode: each player gets a private scoring row in the teams table.
+      // Use the nickname directly so leaderboards show player names only.
       const teamColor = TEAM_COLORS[Math.floor(Math.random() * TEAM_COLORS.length)];
       const teamIcon = TEAM_ICONS[Math.floor(Math.random() * TEAM_ICONS.length)];
       
@@ -298,7 +363,7 @@ function PlayContent() {
         .from('teams')
         .insert([{
           room_id: roomId,
-          name: `${nickname}'s Team`,
+          name: cleanNickname,
           color: teamColor.value,
           icon: teamIcon.name,
         }])
@@ -313,7 +378,7 @@ function PlayContent() {
         .insert([{
           room_id: roomId,
           team_id: teamData.id,
-          nickname: nickname.trim(),
+          nickname: cleanNickname,
         }])
         .select()
         .single();
@@ -482,12 +547,12 @@ function PlayContent() {
 
             {player && player.team_id && (
               <div className="card-glow mb-6">
-                <p className="text-tbn-cream/60 text-sm mb-2">Your Team</p>
+                <p className="text-tbn-cream/60 text-sm mb-2">You</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Users className="w-8 h-8 text-tbn-gold" />
                     <span className="text-lg font-bold">
-                      {teams.find(t => t.id === player.team_id)?.name || 'Your Team'}
+                      {teams.find(t => t.id === player.team_id)?.name || player.nickname}
                     </span>
                   </div>
                   <div className="text-right">
@@ -501,7 +566,7 @@ function PlayContent() {
             )}
 
             <div className="space-y-3">
-              <p className="text-tbn-cream/60 text-sm">Other Teams</p>
+              <p className="text-tbn-cream/60 text-sm">Other Players</p>
               {teams.filter(t => t.id !== player?.team_id).map(team => (
                 <div
                   key={team.id}
@@ -636,7 +701,7 @@ function PlayContent() {
                     {selectedAnswer === revealedAnswer ? (
                       <span className="text-tbn-mint font-bold">✓ Correct! Well done!</span>
                     ) : (
-                      <span className="text-tbn-cream/60">Your team&apos;s score will update soon</span>
+                      <span className="text-tbn-cream/60">Your score will update soon</span>
                     )}
                   </p>
                 </div>
@@ -662,13 +727,16 @@ function PlayContent() {
             
             {player && player.team_id && (
               <div className="card-glow mb-8">
-                <p className="text-tbn-cream/60 mb-2">Your Team</p>
+                <p className="text-tbn-cream/60 mb-2">Your Final Score</p>
                 <p className="text-2xl font-bold mb-4">
-                  {teams.find(t => t.id === player.team_id)?.name}
+                  {teams.find(t => t.id === player.team_id)?.name || player.nickname}
                 </p>
                 <div className="text-4xl font-display font-bold text-tbn-gold">
-                  {teamScore} points
+                  {(teams.find(t => t.id === player.team_id)?.score ?? teamScore)} points
                 </div>
+                {teamRank > 0 && (
+                  <p className="text-tbn-cream/60 mt-2">Rank #{teamRank}</p>
+                )}
               </div>
             )}
 
