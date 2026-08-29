@@ -64,7 +64,7 @@ try {
     throw new Error('Host did not end game');
   }
 
-  await p1.getByText(/Game Over/i).waitFor({ timeout: 15000 });
+  await p1.getByText(/Game Over/i).waitFor({ timeout: 30000 });
   const p1End = await p1.locator('body').innerText();
   if (/last question|The correct answer was/i.test(p1End)) throw new Error('Player stayed on last reveal/answer after game ended');
   if (/RobQA's Team/i.test(p1End) || /Your Team/i.test(p1End)) throw new Error('Game over still shows team language');

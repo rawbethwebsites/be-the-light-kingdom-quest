@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -57,6 +57,21 @@ function PlayContent() {
   const [teamScore, setTeamScore] = useState(0);
   const [teamRank, setTeamRank] = useState(0);
   const [revealedAnswer, setRevealedAnswer] = useState<number | null>(null);
+  const roomRef = useRef<Room | null>(null);
+  const gameStateRef = useRef<GameState>('welcome');
+  const currentQuestionRef = useRef<GameQuestion | null>(null);
+
+  useEffect(() => {
+    roomRef.current = room;
+  }, [room]);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestion;
+  }, [currentQuestion]);
 
   // Check online status
   useEffect(() => {
@@ -155,7 +170,11 @@ function PlayContent() {
         (payload) => {
           const event = payload.new as any;
           if (event.event_type === 'answer_revealed' && event.payload) {
-            if (event.payload.question_id && room.active_question_id && event.payload.question_id !== room.active_question_id) {
+            const latestRoom = roomRef.current;
+            if (latestRoom?.status === 'ended' || gameStateRef.current === 'ended') {
+              return;
+            }
+            if (event.payload.question_id && latestRoom?.active_question_id && event.payload.question_id !== latestRoom.active_question_id) {
               return;
             }
             setRevealedAnswer(event.payload.correct_option);
@@ -187,7 +206,7 @@ function PlayContent() {
       supabase.removeChannel(roomChannel);
       supabase.removeChannel(teamsChannel);
     };
-  }, [room, player?.team_id, gameState]);
+  }, [room?.id, player?.team_id]);
 
   // Timer countdown follows the room deadline, not local answer state.
   useEffect(() => {
@@ -198,6 +217,60 @@ function PlayContent() {
     const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
   }, [gameState, room?.timer_ends_at]);
+
+  // Mobile safety sync: if a phone misses a realtime update, poll the tiny room
+  // row occasionally so countdown resets/end-game still arrive without refresh.
+  useEffect(() => {
+    if (!room?.id || !player?.id) return;
+
+    const syncRoom = async () => {
+      const latestRoom = roomRef.current;
+      if (!latestRoom?.id) return;
+
+      const { data: freshRoom } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', latestRoom.id)
+        .single();
+
+      if (!freshRoom) return;
+      setRoom(freshRoom as Room);
+
+      if (freshRoom.status === 'ended') {
+        if (player.team_id) await refreshMyScore(freshRoom.id, player.team_id);
+        setHasSubmitted(false);
+        setSelectedAnswer(null);
+        setRevealedAnswer(null);
+        setGameState('ended');
+        return;
+      }
+
+      if (freshRoom.status === 'active' && freshRoom.active_question_id) {
+        const currentId = currentQuestionRef.current?.id;
+        if (freshRoom.active_question_id !== currentId) {
+          const { data: qData } = await supabase
+            .from('game_questions')
+            .select(SAFE_QUESTION_SELECT)
+            .eq('id', freshRoom.active_question_id)
+            .single();
+
+          if (qData) {
+            setCurrentQuestion(qData as GameQuestion);
+            setTimerSeconds(getRemainingSeconds(freshRoom.timer_ends_at) || qData.time_limit_seconds || 30);
+            setHasSubmitted(false);
+            setSelectedAnswer(null);
+            setRevealedAnswer(null);
+            setGameState('playing');
+          }
+        } else if (gameStateRef.current === 'playing') {
+          setTimerSeconds(getRemainingSeconds(freshRoom.timer_ends_at));
+        }
+      }
+    };
+
+    const interval = setInterval(syncRoom, 2500);
+    return () => clearInterval(interval);
+  }, [room?.id, player?.id, player?.team_id]);
 
   const restoreSession = async (sessionToken: string, playerId: string) => {
     try {
@@ -601,6 +674,21 @@ function PlayContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
+            {/* Timer — intentionally first and visually dominant on phones. */}
+            <div className="mb-5 rounded-3xl border-2 border-tbn-gold/40 bg-gradient-to-b from-tbn-gold/15 to-tbn-black/70 p-5 text-center shadow-glow">
+              <p className="mb-1 text-xs font-bold uppercase tracking-[0.28em] text-tbn-gold/80">Countdown</p>
+              <div
+                data-testid="player-countdown"
+                className={cn(
+                  'text-7xl md:text-8xl font-display font-black leading-none tabular-nums',
+                  timerSeconds <= 5 ? 'text-tbn-orange' : 'text-tbn-gold'
+                )}
+              >
+                {timerSeconds}
+              </div>
+              <p className="mt-1 text-sm font-semibold text-tbn-cream/70">seconds remaining</p>
+            </div>
+
             {player && (
               <div className="mb-5 grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-2xl border border-tbn-gold/20 bg-tbn-navy/40 p-3">
@@ -608,7 +696,7 @@ function PlayContent() {
                   <p className="truncate font-display font-bold text-tbn-cream">{player.nickname}</p>
                 </div>
                 <div className="rounded-2xl border border-tbn-gold/20 bg-tbn-navy/40 p-3">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-tbn-cream/45">Score</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-tbn-cream/45">Your Score</p>
                   <p className="font-display text-xl font-bold text-tbn-gold">{teamScore}</p>
                 </div>
                 <div className="rounded-2xl border border-tbn-gold/20 bg-tbn-navy/40 p-3">
@@ -617,17 +705,6 @@ function PlayContent() {
                 </div>
               </div>
             )}
-
-            {/* Timer */}
-            <div className="text-center mb-6">
-              <div className={cn(
-                'text-6xl md:text-7xl font-display font-bold',
-                timerSeconds <= 5 ? 'text-tbn-orange' : 'text-tbn-gold'
-              )}>
-                {timerSeconds}
-              </div>
-              <p className="text-tbn-cream/60 text-sm">seconds remaining</p>
-            </div>
 
             {/* Question */}
             {currentQuestion && (

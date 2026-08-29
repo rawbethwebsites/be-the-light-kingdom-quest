@@ -449,13 +449,60 @@ export default function HostDashboard() {
     }
   };
 
-  const toggleTimer = () => {
-    setTimerRunning(!timerRunning);
+  const toggleTimer = async () => {
+    if (!room || room.status !== 'active') {
+      setTimerRunning(!timerRunning);
+      return;
+    }
+
+    if (timerRunning) {
+      // Pause locally for the host. The authoritative timer resumes when host resets/starts it again.
+      setTimerRunning(false);
+      return;
+    }
+
+    const seconds = timerSeconds > 0 ? timerSeconds : currentQuestion?.time_limit_seconds || QUESTION_SECONDS;
+    const startedAt = new Date().toISOString();
+    const endsAt = getTimerEndsAt(seconds);
+    const { error: updateError } = await supabase
+      .from('rooms')
+      .update({ timer_started_at: startedAt, timer_ends_at: endsAt })
+      .eq('id', room.id);
+
+    if (updateError) {
+      setError('Failed to sync timer');
+      return;
+    }
+
+    setRoom({ ...room, timer_started_at: startedAt, timer_ends_at: endsAt });
+    setTimerSeconds(seconds);
+    setTimerRunning(true);
+    setAnswerRevealed(false);
   };
 
-  const resetTimer = (seconds: number) => {
+  const resetTimer = async (seconds: number) => {
+    if (!room || room.status !== 'active') {
+      setTimerSeconds(seconds);
+      setTimerRunning(false);
+      return;
+    }
+
+    const startedAt = new Date().toISOString();
+    const endsAt = getTimerEndsAt(seconds);
+    const { error: updateError } = await supabase
+      .from('rooms')
+      .update({ timer_started_at: startedAt, timer_ends_at: endsAt })
+      .eq('id', room.id);
+
+    if (updateError) {
+      setError('Failed to reset timer for players');
+      return;
+    }
+
+    setRoom({ ...room, timer_started_at: startedAt, timer_ends_at: endsAt });
     setTimerSeconds(seconds);
-    setTimerRunning(false);
+    setTimerRunning(true);
+    setAnswerRevealed(false);
   };
 
   const adjustScore = async (teamId: string, delta: number) => {
@@ -858,6 +905,7 @@ export default function HostDashboard() {
                     {timerRunning ? 'Pause' : 'Start'} Timer
                   </button>
                   <button
+                    aria-label="Reset countdown to 15 seconds"
                     onClick={() => resetTimer(15)}
                     className="px-6 py-3 bg-tbn-navy rounded-lg font-bold hover:bg-tbn-navy/80 transition-colors"
                   >
