@@ -240,14 +240,13 @@ function PlayContent() {
 
       if (teamError) throw teamError;
 
-      // Create player
+      // Create player — let DB auto-generate session_token UUID
       const { data: playerData, error: playerError } = await supabase
         .from('players')
         .insert([{
           room_id: roomId,
           team_id: teamData.id,
           nickname: nickname.trim(),
-          session_token: `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         }])
         .select()
         .single();
