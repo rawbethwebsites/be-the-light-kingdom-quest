@@ -311,12 +311,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Helper to set player context for RLS
-export function setPlayerContext(sessionToken: string, playerId: string, teamId?: string) {
+export function setPlayerContext(sessionToken: string, playerId: string, teamId?: string, roomCode?: string) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('player_session_token', sessionToken);
     localStorage.setItem('player_id', playerId);
     if (teamId) {
       localStorage.setItem('team_id', teamId);
+    }
+    if (roomCode) {
+      localStorage.setItem('room_code', roomCode);
     }
   }
 }
@@ -328,9 +331,10 @@ export function getPlayerContext() {
       sessionToken: localStorage.getItem('player_session_token'),
       playerId: localStorage.getItem('player_id'),
       teamId: localStorage.getItem('team_id'),
+      roomCode: localStorage.getItem('room_code'),
     };
   }
-  return { sessionToken: null, playerId: null, teamId: null };
+  return { sessionToken: null, playerId: null, teamId: null, roomCode: null };
 }
 
 // Clear player context
@@ -339,5 +343,6 @@ export function clearPlayerContext() {
     localStorage.removeItem('player_session_token');
     localStorage.removeItem('player_id');
     localStorage.removeItem('team_id');
+    localStorage.removeItem('room_code');
   }
 }

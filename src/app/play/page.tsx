@@ -68,11 +68,26 @@ function PlayContent() {
   // Restore session on mount
   useEffect(() => {
     const context = getPlayerContext();
+
+    // QR/deep-link join should show the nickname form with room code prefilled.
+    // Do not move to the spinner-only 'join' state — that state has no form/actions.
+    if (roomCodeFromUrl) {
+      setRoomCode(roomCodeFromUrl);
+      if (context.roomCode && context.roomCode !== roomCodeFromUrl) {
+        clearPlayerContext();
+        setPlayer(null);
+        setRoom(null);
+        setGameState('welcome');
+        return;
+      }
+      if (!context.sessionToken || !context.playerId) {
+        setGameState('welcome');
+        return;
+      }
+    }
+
     if (context.sessionToken && context.playerId) {
       restoreSession(context.sessionToken, context.playerId);
-    } else if (roomCodeFromUrl) {
-      setRoomCode(roomCodeFromUrl);
-      setGameState('join');
     }
   }, [roomCodeFromUrl]);
 
@@ -288,7 +303,7 @@ function PlayContent() {
       if (playerError) throw playerError;
 
       // Save session
-      setPlayerContext(playerData.session_token, playerData.id, teamData.id);
+      setPlayerContext(playerData.session_token, playerData.id, teamData.id, roomCode.toUpperCase());
       setPlayer(playerData);
       setSelectedTeam(teamData.id);
       
