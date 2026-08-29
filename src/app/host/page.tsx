@@ -28,6 +28,28 @@ const GAMES = [
   { key: 'kingdom_builders', name: 'Kingdom Builders', icon: Users, description: 'Mission Challenges', color: 'tbn-orange' },
 ];
 
+const QUESTION_SECONDS = 30;
+const REVEAL_SECONDS = 5;
+const LIGHT_RUSH_QUESTIONS_PER_GAME = 15;
+
+function shuffled<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function getTimerEndsAt(seconds = QUESTION_SECONDS) {
+  return new Date(Date.now() + seconds * 1000).toISOString();
+}
+
+function getRemainingSeconds(endsAt?: string | null) {
+  if (!endsAt) return 0;
+  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+}
+
 export default function HostDashboard() {
   const router = useRouter();
   const [room, setRoom] = useState<Room | null>(null);
@@ -86,19 +108,39 @@ export default function HostDashboard() {
     };
   }, []);
 
-  // Timer effect
+  // Shared room timer: the room timer_ends_at value is the source of truth.
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (timerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0 && timerRunning) {
-      setTimerRunning(false);
-      // Auto-reveal or move on
-    }
+    if (!room?.timer_ends_at || room.status !== 'active' || answerRevealed) return;
+
+    const tick = () => {
+      const remaining = getRemainingSeconds(room.timer_ends_at);
+      setTimerSeconds(remaining);
+
+      if (remaining <= 0) {
+        setTimerRunning(false);
+        revealAnswer();
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
-  }, [timerRunning, timerSeconds]);
+  }, [room?.timer_ends_at, room?.status, answerRevealed, currentQuestion?.id]);
+
+  // After an automatic reveal, give the room a short reveal window, then advance.
+  useEffect(() => {
+    if (!room || room.status !== 'active' || !answerRevealed) return;
+
+    const timeout = setTimeout(() => {
+      if (activeQuestionIndex >= questions.length - 1) {
+        endGame(false);
+      } else {
+        nextQuestion();
+      }
+    }, REVEAL_SECONDS * 1000);
+
+    return () => clearTimeout(timeout);
+  }, [answerRevealed, room?.status, activeQuestionIndex, questions.length]);
 
   // Subscribe to realtime updates
   useEffect(() => {
@@ -245,18 +287,26 @@ export default function HostDashboard() {
         return;
       }
 
-      const firstQuestion = qData[0];
+      const orderedQuestions = gameKey === 'light_rush'
+        ? shuffled(qData as GameQuestion[]).slice(0, Math.min(LIGHT_RUSH_QUESTIONS_PER_GAME, qData.length))
+        : (qData as GameQuestion[]);
+      const firstQuestion = orderedQuestions[0];
+      const timerEndsAt = getTimerEndsAt(QUESTION_SECONDS);
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('rooms')
         .update({
           status: 'active',
           active_game_key: gameKey,
           active_question_index: 0,
           active_question_id: firstQuestion.id,
+          timer_started_at: new Date().toISOString(),
+          timer_ends_at: timerEndsAt,
           joins_locked: true,
         })
         .eq('id', room.id);
+
+      if (updateError) throw updateError;
 
       setRoom({
         ...room,
@@ -264,15 +314,18 @@ export default function HostDashboard() {
         active_game_key: gameKey,
         active_question_index: 0,
         active_question_id: firstQuestion.id,
+        timer_started_at: new Date().toISOString(),
+        timer_ends_at: timerEndsAt,
         joins_locked: true,
       });
 
-      setQuestions(qData);
+      setQuestions(orderedQuestions);
       setActiveGame(gameKey);
       setActiveQuestionIndex(0);
       setCurrentQuestion(firstQuestion);
-      setTimerSeconds(firstQuestion.time_limit_seconds);
-      setTimerRunning(false);
+      setTimerSeconds(QUESTION_SECONDS);
+      setTimerRunning(true);
+      setAnswerRevealed(false);
     } catch (err) {
       setError('Failed to start game');
     }
@@ -284,23 +337,33 @@ export default function HostDashboard() {
     const newIndex = activeQuestionIndex + 1;
     const nextQ = questions[newIndex];
 
-    await supabase
+    const timerEndsAt = getTimerEndsAt(QUESTION_SECONDS);
+    const { error: updateError } = await supabase
       .from('rooms')
       .update({
         active_question_index: newIndex,
         active_question_id: nextQ.id,
+        timer_started_at: new Date().toISOString(),
+        timer_ends_at: timerEndsAt,
       })
       .eq('id', room.id);
+
+    if (updateError) {
+      setError(updateError.message || 'Failed to advance question');
+      return;
+    }
 
     setRoom({
       ...room,
       active_question_index: newIndex,
       active_question_id: nextQ.id,
+      timer_started_at: new Date().toISOString(),
+      timer_ends_at: timerEndsAt,
     });
     setActiveQuestionIndex(newIndex);
     setCurrentQuestion(nextQ);
-    setTimerSeconds(nextQ.time_limit_seconds);
-    setTimerRunning(false);
+    setTimerSeconds(QUESTION_SECONDS);
+    setTimerRunning(true);
     setAnswerRevealed(false);
   };
 
@@ -400,10 +463,10 @@ export default function HostDashboard() {
     }
   };
 
-  const endGame = async () => {
+  const endGame = async (requireConfirmation = true) => {
     if (!room) return;
 
-    if (!confirm('End the current game? Players will see the Game Over screen.')) return;
+    if (requireConfirmation && !confirm('End the current game? Players will see the Game Over screen.')) return;
 
     try {
       setTimerRunning(false);
@@ -548,7 +611,7 @@ export default function HostDashboard() {
                 </button>
 
                 <button
-                  onClick={endGame}
+                  onClick={() => endGame()}
                   className="p-2 rounded-lg text-tbn-orange hover:text-tbn-orange/80 transition-colors"
                   title="End Game"
                 >

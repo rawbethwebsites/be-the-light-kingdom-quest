@@ -24,6 +24,13 @@ const GAMES = {
   kingdom_builders: { name: 'Kingdom Builders', icon: Users, color: 'tbn-orange' },
 };
 
+const SAFE_QUESTION_SELECT = 'id,game_key,sequence,question_text,question_type,options,explanation,bible_reference,source_label,time_limit_seconds,difficulty,is_active,created_at';
+
+function getRemainingSeconds(endsAt?: string | null) {
+  if (!endsAt) return 0;
+  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+}
+
 export default function DisplayPage() {
   const params = useParams();
   const router = useRouter();
@@ -44,6 +51,14 @@ export default function DisplayPage() {
     loadRoom();
   }, [roomCode]);
 
+  useEffect(() => {
+    if (!room?.timer_ends_at || room.status !== 'active') return;
+    const tick = () => setTimerSeconds(getRemainingSeconds(room.timer_ends_at));
+    tick();
+    const interval = setInterval(tick, 250);
+    return () => clearInterval(interval);
+  }, [room?.timer_ends_at, room?.status]);
+
   const loadRoom = async () => {
     const { data, error } = await supabase
       .from('rooms')
@@ -62,6 +77,7 @@ export default function DisplayPage() {
     if (data.active_question_id) {
       await loadCurrentQuestion(data.active_question_id);
     }
+    setTimerSeconds(getRemainingSeconds(data.timer_ends_at));
     setIsLoading(false);
   };
 
@@ -85,24 +101,23 @@ export default function DisplayPage() {
 
     const { data } = await supabase
       .from('game_questions')
-      .select('*')
+      .select(SAFE_QUESTION_SELECT)
       .eq('game_key', gameKey)
       .eq('is_active', true)
       .order('sequence');
     
-    if (data) setQuestions(data);
+    if (data) setQuestions(data as GameQuestion[]);
   };
 
   const loadCurrentQuestion = async (questionId: string) => {
     const { data } = await supabase
       .from('game_questions')
-      .select('*')
+      .select(SAFE_QUESTION_SELECT)
       .eq('id', questionId)
       .single();
 
     if (data) {
       setCurrentQuestion(data as GameQuestion);
-      setTimerSeconds((data as GameQuestion).time_limit_seconds);
     }
   };
 

@@ -19,6 +19,13 @@ type GameQuestion = Database['public']['Tables']['game_questions']['Row'];
 
 type GameState = 'welcome' | 'join' | 'lobby' | 'playing' | 'revealed' | 'ended';
 
+const SAFE_QUESTION_SELECT = 'id,game_key,sequence,question_text,question_type,options,explanation,bible_reference,source_label,time_limit_seconds,difficulty,is_active,created_at';
+
+function getRemainingSeconds(endsAt?: string | null) {
+  if (!endsAt) return 0;
+  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+}
+
 export default function PlayPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-tbn-gold" /></div>}>
@@ -113,7 +120,7 @@ function PlayContent() {
           if (updatedRoom.active_question_id) {
             const { data: qData } = await supabase
               .from('game_questions')
-              .select('*')
+              .select(SAFE_QUESTION_SELECT)
               .eq('id', updatedRoom.active_question_id)
               .single();
             
@@ -121,7 +128,8 @@ function PlayContent() {
               setCurrentQuestion(qData as GameQuestion);
               setHasSubmitted(false);
               setSelectedAnswer(null);
-              setTimerSeconds((qData as GameQuestion).time_limit_seconds);
+              const remaining = getRemainingSeconds(updatedRoom.timer_ends_at);
+              setTimerSeconds(remaining || 30);
             }
           }
         }
@@ -162,16 +170,15 @@ function PlayContent() {
     };
   }, [room, player?.team_id, gameState]);
 
-  // Timer countdown
+  // Timer countdown follows the room deadline, not local answer state.
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (gameState === 'playing' && timerSeconds > 0 && !hasSubmitted) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => prev - 1);
-      }, 1000);
-    }
+    if (gameState !== 'playing' || !room?.timer_ends_at) return;
+
+    const tick = () => setTimerSeconds(getRemainingSeconds(room.timer_ends_at));
+    tick();
+    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
-  }, [gameState, timerSeconds, hasSubmitted]);
+  }, [gameState, room?.timer_ends_at]);
 
   const restoreSession = async (sessionToken: string, playerId: string) => {
     try {
@@ -213,13 +220,13 @@ function PlayContent() {
       if (data.status === 'active' && data.active_question_id) {
         const { data: qData } = await supabase
           .from('game_questions')
-          .select('*')
+          .select(SAFE_QUESTION_SELECT)
           .eq('id', data.active_question_id)
           .single();
 
         if (qData) {
           setCurrentQuestion(qData as GameQuestion);
-          setTimerSeconds((qData as GameQuestion).time_limit_seconds);
+          setTimerSeconds(getRemainingSeconds(data.timer_ends_at) || 30);
           setHasSubmitted(false);
           setSelectedAnswer(null);
           setRevealedAnswer(null);
