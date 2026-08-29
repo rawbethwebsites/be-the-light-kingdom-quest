@@ -112,12 +112,15 @@ function PlayContent() {
           
           if (updatedRoom.status === 'ended') {
             setGameState('ended');
-          } else if (updatedRoom.status === 'active' && gameState === 'lobby') {
-            setGameState('playing');
+            return;
           }
 
-          // If active_question_id changed, load the new question
-          if (updatedRoom.active_question_id) {
+          // If active_question_id changed, load the new question and fully reset
+          // the player's reveal/answer state. Without this, phones stay on the
+          // previous reveal screen and show the next question's option at the old
+          // revealed index, which looks like the next answer leaked.
+          if (updatedRoom.status === 'active' && updatedRoom.active_question_id) {
+            const isNewQuestion = updatedRoom.active_question_id !== currentQuestion?.id;
             const { data: qData } = await supabase
               .from('game_questions')
               .select(SAFE_QUESTION_SELECT)
@@ -126,10 +129,15 @@ function PlayContent() {
             
             if (qData) {
               setCurrentQuestion(qData as GameQuestion);
-              setHasSubmitted(false);
-              setSelectedAnswer(null);
               const remaining = getRemainingSeconds(updatedRoom.timer_ends_at);
               setTimerSeconds(remaining || 30);
+
+              if (isNewQuestion || gameState === 'lobby' || gameState === 'revealed') {
+                setHasSubmitted(false);
+                setSelectedAnswer(null);
+                setRevealedAnswer(null);
+                setGameState('playing');
+              }
             }
           }
         }
@@ -139,6 +147,9 @@ function PlayContent() {
         (payload) => {
           const event = payload.new as any;
           if (event.event_type === 'answer_revealed' && event.payload) {
+            if (event.payload.question_id && room.active_question_id && event.payload.question_id !== room.active_question_id) {
+              return;
+            }
             setRevealedAnswer(event.payload.correct_option);
             setGameState('revealed');
           }
