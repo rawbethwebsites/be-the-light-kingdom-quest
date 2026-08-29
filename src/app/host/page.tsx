@@ -258,6 +258,15 @@ export default function HostDashboard() {
         })
         .eq('id', room.id);
 
+      setRoom({
+        ...room,
+        status: 'active',
+        active_game_key: gameKey,
+        active_question_index: 0,
+        active_question_id: firstQuestion.id,
+        joins_locked: true,
+      });
+
       setQuestions(qData);
       setActiveGame(gameKey);
       setActiveQuestionIndex(0);
@@ -283,6 +292,11 @@ export default function HostDashboard() {
       })
       .eq('id', room.id);
 
+    setRoom({
+      ...room,
+      active_question_index: newIndex,
+      active_question_id: nextQ.id,
+    });
     setActiveQuestionIndex(newIndex);
     setCurrentQuestion(nextQ);
     setTimerSeconds(nextQ.time_limit_seconds);
