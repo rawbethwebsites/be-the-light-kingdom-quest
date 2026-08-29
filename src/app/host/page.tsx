@@ -470,6 +470,16 @@ export default function HostDashboard() {
 
     try {
       setTimerRunning(false);
+
+      // If the host ends during/just after the final question before the reveal
+      // cycle completes, score the current submitted answers first. Otherwise
+      // players can reach Game Over with a stale 0 even though they answered
+      // correctly.
+      if (currentQuestion && !answerRevealed && room.status === 'active') {
+        await revealAnswer();
+        await loadTeams(room.id);
+      }
+
       setAnswerRevealed(false);
 
       const endedRoom = {
