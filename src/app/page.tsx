@@ -2,17 +2,51 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Zap, Users, Flame, Shield } from 'lucide-react';
+import {
+  CalendarDays, MapPin, Clock, Users, Gamepad2, Sparkles,
+  Zap, Shield, Flame, ArrowRight, Lightbulb, Palette, Mic
+} from 'lucide-react';
 import { NavBar } from '@/components/NavBar';
+
+const EVENT = {
+  title: 'BE THE LIGHT',
+  subtitle: 'Kingdom Quest',
+  verse: 'You are the light of the world. A city set on a hill cannot be hidden.',
+  verseRef: 'Matthew 5:14',
+  org: 'FCT9 Junior Church',
+  date: 'Saturday, 29th August 2026',
+  time: '9:00 AM',
+  venue: 'RCCG Glory Assembly',
+  address: 'Gaduwa Estate, Prompt Gudu, Abuja',
+  audience: 'Teenagers (Ages 13–19)',
+  speaker: 'Rob / The Boost Nation',
+  tagline: 'Think. Discern. Create. Impact.',
+  themes: ['Music', 'Life-Changing Talks', 'Vocational Skills'],
+  description:
+    'An interactive session on productive AI use for teenagers. We will play a live multiplayer Bible game, learn how to use AI responsibly, and design personal digital portfolios.',
+};
+
+const TALK_HIGHLIGHTS = [
+  { icon: Lightbulb, title: 'Learn', text: 'Bible knowledge through fast-paced quiz games on your phone.' },
+  { icon: Shield, title: 'Discern', text: 'Tell apart Bible truth, facts, AI-generated content, and false claims.' },
+  { icon: Palette, title: 'Create', text: 'Design a personal digital portfolio you can take home today.' },
+  { icon: Sparkles, title: 'Impact', text: 'Use your gifts, faith, and technology to serve your community.' },
+];
+
+const GAMES = [
+  { icon: Zap, name: 'Light Rush', desc: 'Fast-paced Bible quiz with speed bonuses and light streaks.', color: 'text-tbn-gold' },
+  { icon: Shield, name: 'Truth Detector', desc: 'Discern between Bible truth, facts, and AI-generated content.', color: 'text-tbn-amber' },
+  { icon: Flame, name: 'Lights Out', desc: 'Rescue the city by choosing wise moves in real-life scenarios.', color: 'text-tbn-orange' },
+];
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden">
       <NavBar current="home" />
-      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 w-full">
+
       {/* Particle background */}
       <div className="particle-bg">
-        {Array.from({ length: 30 }).map((_, i) => (
+        {Array.from({ length: 24 }).map((_, i) => (
           <div
             key={i}
             className="particle"
@@ -25,146 +59,187 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Light rays effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-b from-tbn-gold/10 to-transparent rounded-full blur-3xl" />
+      {/* Light rays */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-tbn-gold/8 blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full bg-tbn-orange/6 blur-3xl" />
+        <div className="absolute right-1/4 top-1/3 h-[300px] w-[300px] rounded-full bg-tbn-amber/5 blur-3xl" />
       </div>
 
-      {/* Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 max-w-5xl mx-auto text-center"
-      >
-        {/* Theme verse */}
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-16">
+        {/* Org banner */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="mb-6"
+          transition={{ duration: 0.5 }}
+          className="mb-6 text-center"
         >
-          <p className="text-tbn-gold/80 text-lg md:text-xl font-medium italic">
-            "You are the light of the world. A city set on a hill cannot be hidden."
-          </p>
-          <p className="text-tbn-amber/70 text-base md:text-lg mt-2">
-            — Matthew 5:14
-          </p>
+          <span className="inline-block rounded-full border border-tbn-gold/20 bg-tbn-charcoal/60 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-tbn-gold/70 md:text-sm">
+            {EVENT.org} · Annual Teenagers Conference
+          </span>
         </motion.div>
 
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-4"
-        >
-          <span className="text-gradient">BE THE LIGHT</span>
-        </motion.h1>
-
-        <motion.h2
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-tbn-cream mb-8"
-        >
-          KINGDOM QUEST
-        </motion.h2>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="text-tbn-cream/70 text-lg md:text-xl max-w-3xl mx-auto mb-12"
-        >
-          A real-time multiplayer Bible game experience for church youth events.
-          Learn, discern, create, and lead responsibly with faith and technology.
-        </motion.p>
-
-        {/* Action buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+        {/* Hero */}
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="text-center"
+        >
+          <p className="mb-3 text-base font-medium italic text-tbn-gold/80 md:text-lg">
+            "{EVENT.verse}"
+          </p>
+          <p className="mb-6 text-sm text-tbn-amber/70 md:text-base">— {EVENT.verseRef}</p>
+
+          <h1 className="mb-2 font-display text-5xl font-bold tracking-tight md:text-7xl lg:text-8xl">
+            <span className="text-gradient">{EVENT.title}</span>
+          </h1>
+          <h2 className="mb-6 font-display text-2xl font-bold text-tbn-cream md:text-4xl lg:text-5xl">
+            {EVENT.subtitle}
+          </h2>
+
+          <p className="mx-auto mb-8 max-w-2xl text-base text-tbn-cream/70 md:text-lg">
+            {EVENT.description}
+          </p>
+
+          {/* Event meta grid */}
+          <div className="mx-auto mb-10 grid max-w-3xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            {[
+              { icon: CalendarDays, label: 'Date', value: EVENT.date },
+              { icon: Clock, label: 'Time', value: EVENT.time },
+              { icon: MapPin, label: 'Venue', value: EVENT.venue },
+              { icon: Users, label: 'For', value: EVENT.audience },
+            ].map(({ icon: Icon, label, value }) => (
+              <div
+                key={label}
+                className="card-dark flex flex-col items-center gap-1.5 p-3 text-center md:p-4"
+              >
+                <Icon className="h-5 w-5 text-tbn-gold md:h-6 md:w-6" />
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-tbn-gold/60 md:text-xs">
+                  {label}
+                </p>
+                <p className="text-xs font-medium text-tbn-cream/80 md:text-sm">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Address line */}
+          <p className="mb-8 text-sm text-tbn-cream/40">
+            <MapPin className="mr-1 inline h-4 w-4 text-tbn-gold/50" />
+            {EVENT.address}
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/game" className="btn-primary w-full sm:w-auto">
+              <Gamepad2 className="mr-2 inline-block h-5 w-5" />
+              Play the Game
+            </Link>
+            <Link href="/itinerary" className="btn-secondary w-full sm:w-auto">
+              <CalendarDays className="mr-2 inline-block h-5 w-5" />
+              View Talk Plan
+            </Link>
+          </div>
+        </motion.section>
+
+        {/* Highlights */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.7 }}
+          className="mt-16 md:mt-24"
+        >
+          <h3 className="mb-8 text-center font-display text-2xl font-bold text-tbn-cream md:text-3xl">
+            What We&apos;ll Do
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-6">
+            {TALK_HIGHLIGHTS.map(({ icon: Icon, title, text }, i) => (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
+                className="card-dark group"
+              >
+                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-tbn-gold/10 transition-transform group-hover:scale-110">
+                  <Icon className="h-6 w-6 text-tbn-gold" />
+                </div>
+                <h4 className="mb-1 font-display text-lg font-bold text-tbn-cream">{title}</h4>
+                <p className="text-sm text-tbn-cream/60">{text}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Game preview */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.7 }}
+          className="mt-16 md:mt-24"
+        >
+          <div className="mb-8 flex items-center justify-between">
+            <h3 className="font-display text-2xl font-bold text-tbn-cream md:text-3xl">
+              Three Games. One Mission.
+            </h3>
+            <Link
+              href="/game"
+              className="flex items-center gap-1 text-sm font-semibold text-tbn-gold hover:text-tbn-amber"
+            >
+              Start <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3 md:gap-6">
+            {GAMES.map(({ icon: Icon, name, desc, color }, i) => (
+              <motion.div
+                key={name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 + i * 0.1, duration: 0.5 }}
+                className="card-dark group cursor-pointer"
+              >
+                <Icon className={`mb-4 h-10 w-10 ${color}`} />
+                <h4 className="mb-2 font-display text-xl font-bold text-tbn-cream">{name}</h4>
+                <p className="text-sm text-tbn-cream/60">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Event themes from flyer */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.6 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
+          className="mt-16 md:mt-20"
         >
-          <Link href="/host" className="btn-primary w-full sm:w-auto">
-            <Zap className="inline-block w-5 h-5 mr-2" />
-            Host a Game
-          </Link>
-          <Link href="/play" className="btn-secondary w-full sm:w-auto">
-            <Users className="inline-block w-5 h-5 mr-2" />
-            Join a Game
-          </Link>
-        </motion.div>
+          <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-3">
+            {EVENT.themes.map((theme) => (
+              <span
+                key={theme}
+                className="rounded-full border border-tbn-gold/20 bg-tbn-gold/8 px-5 py-2 text-sm font-medium text-tbn-gold/80"
+              >
+                {theme}
+              </span>
+            ))}
+          </div>
+        </motion.section>
 
-        {/* Features */}
-        <motion.div
+        {/* Speaker / footer */}
+        <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.8 }}
-          className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto"
+          transition={{ delay: 0.9, duration: 0.6 }}
+          className="mt-12 text-center md:mt-16"
         >
-          <div className="card-dark text-left">
-            <Zap className="w-10 h-10 text-tbn-gold mb-4" />
-            <h3 className="text-xl font-display font-bold text-tbn-cream mb-2">
-              Light Rush
-            </h3>
-            <p className="text-tbn-cream/60 text-sm md:text-base">
-              Fast-paced Bible quiz with speed bonuses and light streaks. Test your knowledge!
+          <div className="mx-auto max-w-xl rounded-2xl border border-tbn-gold/15 bg-gradient-to-b from-tbn-navy/40 to-transparent p-6">
+            <p className="mb-2 flex items-center justify-center gap-1 text-sm font-semibold uppercase tracking-wider text-tbn-gold/60">
+              <Mic className="h-4 w-4" /> Speaker
             </p>
+            <p className="font-display text-xl font-bold text-tbn-cream">{EVENT.speaker}</p>
+            <p className="mt-3 text-sm text-tbn-cream/50">{EVENT.tagline}</p>
           </div>
-
-          <div className="card-dark text-left">
-            <Shield className="w-10 h-10 text-tbn-amber mb-4" />
-            <h3 className="text-xl font-display font-bold text-tbn-cream mb-2">
-              Truth Detector
-            </h3>
-            <p className="text-tbn-cream/60 text-sm md:text-base">
-              Discern between Bible truth, facts, and AI-generated content. Think critically!
-            </p>
-          </div>
-
-          <div className="card-dark text-left">
-            <Flame className="w-10 h-10 text-tbn-orange mb-4" />
-            <h3 className="text-xl font-display font-bold text-tbn-cream mb-2">
-              Lights Out
-            </h3>
-            <p className="text-tbn-cream/60 text-sm md:text-base">
-              Rescue the city by choosing wise moves in AI, school, friendship, privacy, and faith scenarios.
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Core messages */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-          className="mt-16 text-tbn-cream/50 text-sm md:text-base max-w-2xl mx-auto"
-        >
-          <p className="mb-4">
-            <strong className="text-tbn-gold/80">Think. Discern. Create. Impact.</strong>
-          </p>
-          <p className="mb-2">
-            Technology is powerful; character must lead. Use AI to learn, not to copy.
-          </p>
-          <p>
-            Your gifts can solve real problems. A city on a hill cannot be hidden.
-          </p>
-        </motion.div>
-      </motion.div>
-
-      {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.6 }}
-        className="absolute bottom-6 left-0 right-0 text-center text-tbn-cream/40 text-xs md:text-sm"
-      >
-        BE THE LIGHT: Kingdom Quest — Built for church youth events
-      </motion.footer>
+        </motion.section>
       </div>
     </main>
   );
