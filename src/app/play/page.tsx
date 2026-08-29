@@ -49,6 +49,7 @@ function PlayContent() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [teamScore, setTeamScore] = useState(0);
   const [teamRank, setTeamRank] = useState(0);
+  const [revealedAnswer, setRevealedAnswer] = useState<number | null>(null);
 
   // Check online status
   useEffect(() => {
@@ -83,7 +84,7 @@ function PlayContent() {
       .channel(`room:${room.id}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${room.id}` },
-        (payload) => {
+        async (payload) => {
           const updatedRoom = payload.new as Room;
           setRoom(updatedRoom);
           
@@ -92,16 +93,31 @@ function PlayContent() {
           } else if (updatedRoom.status === 'active' && gameState === 'lobby') {
             setGameState('playing');
           }
+
+          // If active_question_id changed, load the new question
+          if (updatedRoom.active_question_id) {
+            const { data: qData } = await supabase
+              .from('game_questions')
+              .select('*')
+              .eq('id', updatedRoom.active_question_id)
+              .single();
+            
+            if (qData) {
+              setCurrentQuestion(qData as GameQuestion);
+              setHasSubmitted(false);
+              setSelectedAnswer(null);
+              setTimerSeconds((qData as GameQuestion).time_limit_seconds);
+            }
+          }
         }
       )
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'game_questions', filter: `id=eq.${room.active_question_id}` },
+        { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${room.id}` },
         (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            setCurrentQuestion(payload.new as GameQuestion);
-            setHasSubmitted(false);
-            setSelectedAnswer(null);
-            setTimerSeconds((payload.new as GameQuestion).time_limit_seconds);
+          const event = payload.new as any;
+          if (event.event_type === 'answer_revealed' && event.payload) {
+            setRevealedAnswer(event.payload.correct_option);
+            setGameState('revealed');
           }
         }
       )
@@ -129,7 +145,7 @@ function PlayContent() {
       supabase.removeChannel(roomChannel);
       supabase.removeChannel(teamsChannel);
     };
-  }, [room, player?.team_id]);
+  }, [room, player?.team_id, gameState]);
 
   // Timer countdown
   useEffect(() => {
@@ -542,13 +558,13 @@ function PlayContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            {currentQuestion && (
+            {currentQuestion && revealedAnswer !== null && (
               <>
                 <div className="text-center mb-6">
                   <p className="text-tbn-cream/60 mb-2">The correct answer was:</p>
                   <p className="text-2xl font-display font-bold text-tbn-gold">
-                    {String.fromCharCode(65 + currentQuestion.correct_option)}.{' '}
-                    {(currentQuestion.options as string[])[currentQuestion.correct_option]}
+                    {String.fromCharCode(65 + revealedAnswer)}.{' '}
+                    {(currentQuestion.options as string[])[revealedAnswer]}
                   </p>
                 </div>
 
@@ -564,7 +580,13 @@ function PlayContent() {
                 )}
 
                 <div className="text-center">
-                  <p className="text-tbn-cream/60">Your team&apos;s score will update soon</p>
+                  <p className="text-tbn-cream/60">
+                    {selectedAnswer === revealedAnswer ? (
+                      <span className="text-tbn-mint font-bold">✓ Correct! Well done!</span>
+                    ) : (
+                      <span className="text-tbn-cream/60">Your team&apos;s score will update soon</span>
+                    )}
+                  </p>
                 </div>
               </>
             )}

@@ -43,6 +43,8 @@ export default function HostDashboard() {
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<GameQuestion | null>(null);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
   const [showQR, setShowQR] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -230,19 +232,38 @@ export default function HostDashboard() {
     if (!room) return;
 
     try {
+      // Load questions for this game
+      const { data: qData } = await supabase
+        .from('game_questions')
+        .select('*')
+        .eq('game_key', gameKey)
+        .eq('is_active', true)
+        .order('sequence');
+
+      if (!qData || qData.length === 0) {
+        setError('No questions found for this game');
+        return;
+      }
+
+      const firstQuestion = qData[0];
+
       await supabase
         .from('rooms')
         .update({
           status: 'active',
           active_game_key: gameKey,
           active_question_index: 0,
+          active_question_id: firstQuestion.id,
           joins_locked: true,
         })
         .eq('id', room.id);
 
+      setQuestions(qData);
       setActiveGame(gameKey);
       setActiveQuestionIndex(0);
-      loadQuestions(gameKey);
+      setCurrentQuestion(firstQuestion);
+      setTimerSeconds(firstQuestion.time_limit_seconds);
+      setTimerRunning(false);
     } catch (err) {
       setError('Failed to start game');
     }
@@ -252,20 +273,35 @@ export default function HostDashboard() {
     if (!room || activeQuestionIndex >= questions.length - 1) return;
 
     const newIndex = activeQuestionIndex + 1;
-    setActiveQuestionIndex(newIndex);
+    const nextQ = questions[newIndex];
 
     await supabase
       .from('rooms')
       .update({
         active_question_index: newIndex,
-        active_question_id: questions[newIndex].id,
+        active_question_id: nextQ.id,
       })
       .eq('id', room.id);
+
+    setActiveQuestionIndex(newIndex);
+    setCurrentQuestion(nextQ);
+    setTimerSeconds(nextQ.time_limit_seconds);
+    setTimerRunning(false);
+    setAnswerRevealed(false);
   };
 
   const revealAnswer = async () => {
-    // Show answer to players
-    // In production, update room state to trigger reveal
+    if (!room || !currentQuestion) return;
+    setAnswerRevealed(true);
+    setTimerRunning(false);
+    // Broadcast a game event so players know the answer is revealed
+    await supabase
+      .from('game_events')
+      .insert([{
+        room_id: room.id,
+        event_type: 'answer_revealed',
+        payload: { question_id: currentQuestion.id, correct_option: currentQuestion.correct_option },
+      }]);
   };
 
   const toggleTimer = () => {
