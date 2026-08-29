@@ -3,10 +3,13 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Zap, Users, Shield } from 'lucide-react';
+import { NavBar } from '@/components/NavBar';
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden">
+    <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      <NavBar current="home" />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 w-full">
       {/* Particle background */}
       <div className="particle-bg">
         {Array.from({ length: 30 }).map((_, i) => (
@@ -162,6 +165,7 @@ export default function Home() {
       >
         BE THE LIGHT: Kingdom Quest — Built for church youth events
       </motion.footer>
+      </div>
     </main>
   );
 }

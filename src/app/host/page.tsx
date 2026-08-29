@@ -13,6 +13,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, type Database } from '@/lib/supabase';
 import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS } from '@/lib/utils';
+import { NavBar } from '@/components/NavBar';
 import { MISSION_TEMPLATES } from '@/lib/missions';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
@@ -348,6 +349,7 @@ export default function HostDashboard() {
 
   return (
     <div className="min-h-screen bg-tbn-black text-tbn-cream">
+      <NavBar current="host" />
       {/* Header */}
       <header className="sticky top-0 z-50 bg-tbn-navy/90 backdrop-blur-sm border-b border-tbn-gold/20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase, type Database, setPlayerContext, getPlayerContext, clearPlayerContext } from '@/lib/supabase';
 import { cn, validateNickname, TEAM_COLORS, TEAM_ICONS } from '@/lib/utils';
+import { NavBar } from '@/components/NavBar';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
 type Team = Database['public']['Tables']['teams']['Row'];
@@ -612,8 +613,9 @@ function PlayContent() {
   };
 
   return (
-    <main className="min-h-screen bg-tbn-black text-tbn-cream p-6 md:p-8">
-      <div className="max-w-2xl mx-auto">
+    <main className="min-h-screen bg-tbn-black text-tbn-cream">
+      <NavBar current="play" />
+      <div className="max-w-2xl mx-auto p-6 md:p-8">
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <h1 className="text-xl font-display font-bold text-gradient">
